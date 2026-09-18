@@ -1,0 +1,6 @@
+claim_id: "AETHER-001"
+title: "Positivity Bound on Intent Forces and Linear Causal KV Integrity"
+guarantees:
+  force_projection: "F_well >= 0 for all dot products (unilateral rectifier)"
+  kv_addressing: "Strict linear addressing: t_idx < MAX_SEQ_LEN (4096)"
+  stability: "Absence of antipodal divergence and limit cycles"

@@ -1,0 +1,48 @@
+# ─── 1. SISTEMA OPERATIVO Y HERRAMIENTAS DE EDICIÓN ───────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# IDEs y Workspaces
+.obsidian/
+.antigravity/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── 2. COMPILACIÓN C++, METAL Y BINARIOS ────────────────────────────────────
+bin/
+*.o
+*.obj
+*.air
+*.metallib
+*.dylib
+*.a
+verification/test_geodesic_diff
+
+# ─── 3. PYTHON Y CACHÉ ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# ─── 4. TRACERS, PROFILING Y LOGS DE HARDWARE ────────────────────────────────
+*.trace/
+*.trace
+*.xml
+analisis_hardware_unificado.txt
+
+# ─── 5. SALIDAS DE GENERACIÓN Y ARCHIVOS TEMPORALES ──────────────────────────
+salida_*.txt
+*.log
+
+# ─── 6. MODELOS, PESOS Y BUFFERS DINÁMICOS ───────────────────────────────────
+*.safetensors
+*.gguf
+*.bin
+!vocab.bin  # Mantener vocab.bin como artefacto esencial si se desea versionar
