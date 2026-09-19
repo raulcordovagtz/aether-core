@@ -1,0 +1,14 @@
+claim_id: "C-014"
+title: "Bifurcación Endógena de Sub-Agente en Espacio de Fases Latente"
+domain: "Sistemas Dinámicos Bifurcantes / Arquitectura UMA Metal"
+trigger_conditions:
+  min_tau_warmup: 8 # Evita disparo en choque inicial de prefill
+  energy_threshold: 0.16 # Dispara si E sube por encima de la meseta basal (~0.13)
+branch_configuration:
+  target_model: "self"
+  target_engine: "AETHER-C008-COGNITIVE"
+  prompt_injection: "Analiza exhaustivamente las inconsistencias o calcula la solución exacta."
+  max_sub_steps: 64
+reconvergence:
+  coupling_strength_beta: 2.5 # Gravedad firme para reconvergencia rápida
+audit_status: "ANALYTICALLY_STABILIZED"
