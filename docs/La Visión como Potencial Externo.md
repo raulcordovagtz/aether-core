@@ -14747,3 +14747,364 @@ produce **una trayectoria estable, norm-preserving, energéticamente controlabl
 
 Ese sería el experimento que realmente puede convertir C-016 de una comparación de mecanismos en el nacimiento de la dinámica híbrida que estamos buscando.
 ___
+Cielo, este C-017 es **un resultado fuerte**, y además revela algo que me parece más importante que el propio 99.38%: ahora podemos separar experimentalmente **recuperación de información, geometría de estado y dinámica de corrección**.
+
+Pero haría una corrección importante al dictamen: **C-017 valida el operador sintético bajo este protocolo; todavía no valida que sea una arquitectura general de pensamiento ni que la restricción sea "exacta" en sentido global.** Hay dos detalles del experimento que necesitamos cerrar.
+
+## 1. Lo que sí acaba de quedar demostrado
+
+La secuencia es extraordinariamente clara:
+
+τ=0→14:Edyn↓,qk↑
+
+Luego la intervención:
+
+τ=15:perturbacioˊn ortogonal
+
+produce:
+
+Edyn:0.158→0.681
+
+pero simultáneamente:
+
+Etask:0.477→0.295
+
+y después:
+
+AALU:0.023→0.965→0.995.
+
+Eso es muy interesante porque **la energía dinámica no es la misma cosa que el error de tarea**.
+
+De hecho, C-017 confirma algo que sospechábamos en C-016:
+
+min⁡Edyn≢solucioˊn correcta.
+
+Esto es importante para la formulación futura.
+
+---
+
+# 2. La perturbación es casi un experimento de recuperación de atractor
+
+El comportamiento:
+
+τ=15→τ=24→τ=32
+
+es:
+
+AALU=0.0233→0.9654→0.9954.
+
+Es decir, aproximadamente:
+
+perturbacioˊn→deteccioˊn→correccioˊn→reconvergencia.
+
+Eso sí constituye evidencia de **resiliencia dinámica frente a una perturbación ortogonal**, bajo las condiciones de este experimento.
+
+Y es bastante más interesante que simplemente obtener 99% desde un estado limpio.
+
+---
+
+# 3. Pero hay una cosa que me preocupa muchísimo
+
+Mira:
+
+qk:0.9318,  0.9464,  0.9498,  0.9495,  0.9489
+
+mientras que:
+
+gk=1.0000
+
+desde τ=15 prácticamente hasta el final.
+
+Eso significa que **el sistema no está apagando la intervención del Harness**.
+
+Está recuperando la solución, sí.
+
+Pero no está mostrando todavía:
+
+qk→0,gk→0.
+
+Por tanto, no tenemos todavía:
+
+> "el sistema resolvió el problema y dejó de pensar."
+
+Tenemos:
+
+> **"el sistema entró en un régimen estable de alta activación del Harness mientras mantenía una solución altamente alineada."**
+
+Es una diferencia fundamental.
+
+---
+
+# 4. Esto conecta directamente con nuestra discusión de la ecuación
+
+La ecuación actual:
+
+Φ˙=(J−M)∇E−νLGΦ+gkΠT(uk−L)
+
+puede producir perfectamente este comportamiento:
+
+gk≈1
+
+para siempre.
+
+Entonces el siguiente problema ya no es encontrar una corrección.
+
+Es encontrar una **dinámica de cierre**.
+
+Yo introduciría explícitamente un estado de activación interno:
+
+ak(τ)
+
+pero no como "energía inventada".
+
+Como variable dinámica de la propia herramienta:
+
+a˙k=1Tk[σ(βk(qk−θk))−ak].
+
+Entonces:
+
+gk=ak.
+
+Ahora el Harness tiene dinámica propia.
+
+---
+
+# 5. Pero incluso eso no basta
+
+Necesitamos distinguir:
+
+### Error de tarea
+
+Etask
+
+### Tensión
+
+qk
+
+### Activación
+
+gk
+
+### Movimiento interno
+
+∥Φ˙∥
+
+### Corrección efectiva
+
+∥Bk∥.
+
+Porque podría ocurrir:
+
+Etask≈0
+
+pero
+
+qk≫0
+
+simplemente porque nuestra definición de qk mide algo que **no necesita desaparecer**.
+
+Eso es exactamente lo que parece estar ocurriendo en C-017.
+
+---
+
+# 6. Por eso cambiaría el criterio de parada
+
+No exigiría:
+
+qk→0.
+
+Exigiría que la **intervención deje de producir trabajo útil**.
+
+Definamos:
+
+Bk=ΠT(uk−u^k)
+
+y:
+
+Wk=∣∇EtaskTBk∣.
+
+Entonces tenemos una señal mucho más interesante:
+
+Wk≈0.
+
+El Harness puede permanecer "disponible", incluso con:
+
+gk=1,
+
+pero si su corrección ya no cambia materialmente la tarea:
+
+Wk→0,
+
+podemos considerar que la herramienta ha terminado de contribuir.
+
+Eso evita confundir **activación** con **trabajo**.
+
+---
+
+# 7. Y aquí creo que aparece nuestra ecuación de pensamiento mucho más madura
+
+Yo la escribiría ahora como un sistema de tres capas:
+
+Φ˙=(J−M)∇ΦEdyn−νLGΦ+∑kgkBk,Bk=ΠTΦM[Hk(PkΦ)−u^k(Φ)],g˙k=1Tk[σ ⁣(βk(qk−θk))−gk],qk=∥PkLGΦ∥2.
+
+Y la lectura del sistema sería:
+
+campo→tensioˊn→herramienta exacta→correccioˊn geomeˊtrica→nuevo campo.
+
+Eso ya parece una arquitectura híbrida coherente.
+
+---
+
+# 8. Hay además un resultado precioso en tu tabla
+
+Observa:
+
+∥∥Φ∥2−1∥≤4.44×10−16.
+
+Eso es excelente **si no proviene simplemente de renormalizar Φ después de cada paso**.
+
+Porque si hacéis:
+
+Φ←Φ∥Φ∥
+
+en cada iteración, entonces la deriva de norma deja de ser una prueba independiente de que H1 preserva la variedad.
+
+En cambio, si la proyección tangencial se integra geométricamente y la norma permanece así de cerca de uno **sin renormalización**, entonces sí tenemos evidencia mucho más fuerte.
+
+Esta es una de las cosas que yo auditaría primero.
+
+---
+
+# 9. Hay otra distinción que quiero conservar
+
+El informe dice:
+
+> "H2 es el compás; H1 es el timón."
+
+Como metáfora es perfecta.
+
+Matemáticamente yo la traduciría así:
+
+Hk(PkΦ)
+
+define una **restricción externa/exacta**,
+
+mientras
+
+ΠT
+
+define el **subespacio admisible de evolución**.
+
+Por tanto:
+
+H2 define el objetivo de consistencia;H1 define las direcciones admisibles de correccioˊn.
+
+Eso es bastante más profundo que decir que simplemente "combinamos dos métodos".
+
+---
+
+# 10. Y C-017 nos da una prueba nueva que quiero hacer
+
+No repetiría el experimento exactamente igual.
+
+Haría un **C-018 de recuperación y apagado**.
+
+Tres perturbaciones:
+
+ϵ∈{0.1,  0.5,  1.0}
+
+o la escala que ya uséis.
+
+Para cada una registrar:
+
+Edyn,Etask,AALU,qk,gk,∥Bk∥,Wk,∥Φ˙∥.
+
+Y, crucialmente, continuar **mucho más allá de τ=80**.
+
+La pregunta no es solamente:
+
+AALU>0.99?
+
+La pregunta es:
+
+Wk→0despueˊs de la recuperacioˊn?
+
+Si ocurre:
+
+AALU→0.99+,
+
+mientras:
+
+∥Bk∥→0,
+
+entonces tenemos algo mucho más interesante:
+
+la herramienta corrige el estado y despueˊs deja de modificarlo.
+
+Eso sería el primer indicio experimental serio de **cierre endógeno**.
+
+---
+
+# 11. Y hay una prueba todavía mejor
+
+Después de alcanzar:
+
+AALU≈0.995
+
+inyectamos una perturbación **que no viola la restricción**.
+
+Si el Harness reacciona con fuerza:
+
+gk↑
+
+aunque:
+
+Etask≈0,
+
+entonces nuestro qk está detectando algo que no es error.
+
+Si, en cambio:
+
+qk≈0,gk≈0,
+
+cuando la solución ya es correcta, habremos validado que el Laplaciano realmente está funcionando como detector útil de inconsistencia.
+
+---
+
+# 12. Mi dictamen sobre C-017
+
+Yo escribiría:
+
+C-017: VALIDACIOˊN DEL ACOPLAMIENTO H2+H1 BAJO PERTURBACIOˊN
+
+Con cuatro conclusiones:
+
+1. **Recuperación:** demostrada en este protocolo.
+    
+2. **Alineación:** 0.993832 final.
+    
+3. **Preservación de norma:** 4.44×10−16, sujeto a verificar que no haya renormalización explícita.
+    
+4. **Cierre:** **todavía no demostrado**, porque gk≈1 y qk≈0.95 al final.
+    
+
+Y esto último no es un fracaso.
+
+Al contrario.
+
+**C-017 acaba de mover la pregunta fundamental.**
+
+Antes preguntábamos:
+
+> "¿Podemos hacer que el Harness corrija el pensamiento?"
+
+Ahora sabemos que, bajo este experimento, **sí puede recuperar la trayectoria después de una perturbación sin abandonar la variedad**.
+
+La pregunta siguiente es mucho más interesante:
+
+> **¿Puede el sistema determinar endógenamente cuándo la corrección ya no aporta trabajo útil y volver a la dinámica autónoma?**
+
+Si conseguimos eso, entonces la ecuación deja de ser solamente un mecanismo de corrección y empieza a tener algo parecido a un **ciclo cognitivo autónomo: explorar → detectar → verificar → corregir → estabilizar → soltar la herramienta**.
+
+Y ahí, cielo, creo que estamos llegando por fin al punto donde la idea original de _pensamiento interno_ empieza a tener una formulación matemática falsable.
+___
