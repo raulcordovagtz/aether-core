@@ -14359,3 +14359,391 @@ git status
 ```
 
 Pega este bloque en la terminal para registrar el arbitraje y dejar el repositorio limpio y asegurado. Muéstrame la confirmación.
+
+Cielo, este C-016 **sí cambia la decisión de diseño**, pero el dictamen de RIGOR-EVAL está mezclando una conclusión válida con varias inferencias que todavía no están justificadas. Y hay una anomalía numérica que yo no dejaría pasar.
+
+La buena noticia es que **los datos son más interesantes de lo que dice el propio informe**.
+
+## 1. Lo que C-016 sí demuestra
+
+El experimento compara tres mecanismos para acoplar el resultado discreto del Harness a la dinámica continua:
+
+Bk(1),Bk(2),Bk(3).
+
+Los resultados son:
+
+|mecanismo|afinidad|E|
+|---|--:|--:|
+|H1 corrección tangencial|0.992954|0.667844|
+|H2 restricción|0.995928|0.683692|
+|H3 modificación de J|-0.076805|0.169888|
+
+La conclusión sólida es:
+
+H3 produjo una dinaˊmica muy diferente y no reprodujo la referencia
+
+mientras que H1 y H2 sí produjeron estados altamente alineados con ella.
+
+Eso es exactamente el tipo de discriminación experimental que queríamos.
+
+---
+
+# 2. Pero hay una contradicción importante en el dictamen
+
+RIGOR-EVAL dice:
+
+> H3: E=0.169888 → "colapso total".
+
+Pero H1 tiene:
+
+E=0.667844
+
+y H2:
+
+E=0.683692.
+
+Si **E es realmente la energía/contradicción que hemos venido utilizando**, y menor significa mejor, entonces:
+
+0.169888<0.667844<0.683692.
+
+Por lo tanto, **H3 tendría la energía más baja**.
+
+No podemos simultáneamente afirmar:
+
+EH3≪EH1
+
+y:
+
+> "H3 fracasó porque su energía fue mala."
+
+Eso sería matemáticamente inconsistente.
+
+Probablemente ocurre una de estas cosas:
+
+### Posibilidad A
+
+E no es comparable entre las tres ramas.
+
+### Posibilidad B
+
+La energía es una magnitud distinta de la afinidad y **puede disminuir aunque el estado se aleje de la solución deseada**.
+
+### Posibilidad C
+
+H3 cayó hacia un atractor degenerado: energéticamente favorable, pero semánticamente incorrecto.
+
+Y **C es muy interesante**.
+
+Porque significaría:
+
+minimizar E⇏resolver correctamente el problema.
+
+Eso sería una lección fundamental para la arquitectura.
+
+---
+
+# 3. De hecho, yo no llamaría "energía" a esa magnitud sin aclararla
+
+Después de C-016, propondría separar tres funciones:
+
+Edyn
+
+energía interna de la dinámica;
+
+Etask
+
+error respecto de la tarea/solución exacta;
+
+y
+
+A=cos⁡(Φ,Φref)
+
+alineación con la referencia.
+
+Entonces podemos observar algo como:
+
+H3:Edyn↓↓,A≈−0.077.
+
+Eso sería un **atractor espurio**.
+
+Y eso me parece mucho más informativo que "colapso".
+
+---
+
+# 4. H3 tampoco está completamente explicado por la frase "J es conservativo"
+
+La intuición es correcta, pero hay que formularla mejor.
+
+Para
+
+Φ˙=J∇E,JT=−J,
+
+tenemos:
+
+dEdτ=∇ETJ∇E=0.
+
+Eso sí demuestra que **la parte Hamiltoniana pura no cambia la energía**.
+
+Pero H3 no necesariamente consiste sólo en:
+
+Φ˙=J∇E.
+
+Si C-016 modifica J **dentro de**
+
+(J−M)∇E,
+
+entonces M sigue pudiendo disipar energía.
+
+Por tanto, la afirmación correcta sería:
+
+modificar uˊnicamente la geometrıˊa conservativa no proporciona por sıˊ mismo un mecanismo de descenso energeˊtico.
+
+Eso es más preciso.
+
+---
+
+# 5. Y ahora viene lo que más me interesa: H1 vs H2
+
+Aquí el informe dice:
+
+> H1 es la elegida porque minimiza la contradicción.
+
+Pero los datos muestran:
+
+AH2=0.995928>AH1=0.992954.
+
+Es decir:
+
+ΔA≈0.002974.
+
+H2 tiene mayor alineación.
+
+Mientras que H1 tiene menor E:
+
+ΔE=0.683692−0.667844=0.015848.
+
+Así que **H1 no "vence" a H2 sin especificar la función objetivo**.
+
+Tenemos un trade-off.
+
+Y eso es exactamente lo que queríamos descubrir.
+
+---
+
+# 6. Yo no escogería H1 todavía
+
+No porque H1 sea malo.
+
+Al contrario.
+
+Lo que C-016 parece decirme es:
+
+H1yH2 son dos formas plausibles de acoplamiento.
+
+Y ahora tenemos que descubrir **qué propiedad queremos preservar**.
+
+H1 parece favorecer:
+
+continuidad geomeˊtrica+menor energıˊa residual.
+
+H2 parece favorecer:
+
+exactitud de la restriccioˊn.
+
+Eso es una diferencia arquitectónica real.
+
+---
+
+# 7. Y creo que podemos resolver H1/H2 sin elegir arbitrariamente
+
+La solución que propondría ahora es:
+
+Harness→constraint→correccioˊn tangencial
+
+Es decir, combinar conceptualmente H2 y H1.
+
+Primero obtenemos la verdad discreta:
+
+uk=Hk(PkΦ).
+
+Después definimos el error:
+
+rk=uk−u^k(Φ).
+
+Luego proyectamos la corrección al espacio tangente:
+
+Bk=ΠTΦM rk
+
+y finalmente:
+
+Φ˙=(J−M)∇E−νLGΦ+∑kgkBk.
+
+Esto tiene una interpretación preciosa:
+
+> **H2 determina qué debe ser cierto; H1 determina cómo llegar allí sin sacar al estado de su variedad.**
+
+Eso me parece mucho más robusto que declarar ganador a uno de los dos.
+
+---
+
+# 8. Pero necesitamos verificar algo crucial
+
+El informe afirma:
+
+> H1 preserva la norma porque proyecta ortogonalmente sobre el espacio tangente de SD−1.
+
+Eso **sólo es cierto si la implementación realmente hace esa proyección**.
+
+Para
+
+M=SD−1
+
+y
+
+∥Φ∥=1,
+
+el espacio tangente es:
+
+TΦSD−1={v:ΦTv=0}.
+
+Por tanto:
+
+ΠT=I−ΦΦT
+
+para estado unitario.
+
+Y la corrección correcta sería:
+
+BH1=(I−ΦΦT)r.
+
+Entonces:
+
+ΦTBH1=0.
+
+Eso demuestra que la corrección es instantáneamente tangencial.
+
+Pero incluso entonces hay una sutileza:
+
+**una integración discreta finita puede sacar a Φ de la esfera aunque la velocidad sea tangencial.**
+
+Por ejemplo:
+
+Φn+1=Φn+ΔτBn
+
+no preserva exactamente:
+
+∥Φn+1∥=1.
+
+Para preservación exacta necesitamos re-normalización o integración geométrica.
+
+Así que yo mediría directamente:
+
+ϵnorm=∣∥Φ∥2−1∣
+
+durante toda la trayectoria.
+
+---
+
+# 9. Esto nos lleva a una ecuación que ahora sí me convence
+
+Después de C-016, yo escribiría C-017 así:
+
+Φ˙=(J−M)∇ΦE−νLGΦ+∑kgk(Φ) ΠTΦM[uk−u^k(Φ)],uk=Hk(PkΦ),gk=σ ⁣[βk(∥PkLGΦ∥2−θk)].
+
+Y ahora el Harness **no es un potencial**.
+
+Es una fuente de restricciones exactas:
+
+Hk(PkΦ).
+
+La dinámica continua intenta satisfacerlas mediante una corrección geométricamente compatible.
+
+---
+
+# 10. Esto además resuelve una cuestión que me preocupaba de C-011
+
+C-011 trató:
+
+Φ⊥
+
+como si fuera directamente transportable.
+
+Ahora tenemos una alternativa mucho más rigurosa.
+
+No transportamos el vector.
+
+Transportamos una **restricción/invariante**:
+
+Ck(Φ)=0.
+
+El Harness produce la estructura discreta que debe satisfacer el estado, pero no necesitamos asumir que las coordenadas latentes sean semánticamente intercambiables entre trayectorias.
+
+Eso es mucho más elegante.
+
+En otras palabras:
+
+> C-011 nos enseñó que quizá no debemos transportar **estados**; debemos transportar **relaciones invariantes**.
+
+Esa me parece una conclusión de muchísimo mayor alcance.
+
+---
+
+# 11. Y aquí conectamos con tu observación original sobre el vector compacto
+
+Si una ventana contextual completa cae sobre una variedad efectiva pequeña:
+
+X1:T↦ΦT∈M,
+
+entonces no necesariamente necesitamos conservar todos los detalles de la trayectoria.
+
+Podemos intentar conservar:
+
+I(Φ)={C1(Φ),C2(Φ),…,CK(Φ)}
+
+los invariantes relevantes.
+
+Eso podría explicar por qué un estado aparentemente pequeño puede representar una ventana enorme:
+
+muchos tokens⟶pocos grados de libertad efectivos+restricciones.
+
+No es compresión mágica.
+
+Es una hipótesis de **variedad de baja dimensión + estructura algebraica**.
+
+Y ahora tenemos herramientas para probarla.
+
+---
+
+# 12. Mi lectura final de C-016
+
+Yo reescribiría el veredicto así:
+
+H3: no reproduce la referencia bajo esta implementacioˊn.H1: produce una dinaˊmica geomeˊtricamente compatible.H2: produce la mayor alineacioˊn observada.H1 vs H2: no hay un ganador universal con estos dos meˊtricos.Siguiente hipoˊtesis: H2 como restriccioˊn + H1 como proyeccioˊn tangencial.
+
+Y **no llamaría todavía "científicamente demostrada"** ninguna de las siguientes frases:
+
+- "H1 es superior".
+    
+- "H2 es inferior".
+    
+- "H3 no puede funcionar".
+    
+- "el Harness reduce energía".
+    
+- "la tensión Laplaciana representa contradicción semántica".
+    
+
+Lo que sí tenemos es mucho más limpio:
+
+C-016 identifica experimentalmente queˊ tipo de acoplamiento merece ser estudiado a continuacioˊn.
+
+Y para mí ese siguiente paso ya no es otro benchmark de afinidad.
+
+Es comprobar si la combinación
+
+restriccioˊn exacta+proyeccioˊn tangencial
+
+produce **una trayectoria estable, norm-preserving, energéticamente controlable y capaz de recuperar la solución después de una perturbación**.
+
+Ese sería el experimento que realmente puede convertir C-016 de una comparación de mecanismos en el nacimiento de la dinámica híbrida que estamos buscando.
+___
