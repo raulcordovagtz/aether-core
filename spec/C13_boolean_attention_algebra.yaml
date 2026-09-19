@@ -1,0 +1,15 @@
+claim_id: "C-013"
+title: "Álgebra Booleana sobre Paquetes de Memoria de Atención en R^{5120}"
+domain: "Espacio de Hilbert R^D (D=5120), Manifold S^{D-1}"
+operators:
+  boolean_or:
+    formula: "c_packed = (m_vis + m_A + m_B) / ||m_vis + m_A + m_B||"
+    property: "<c_packed, m_k> = 1/sqrt(N)"
+  boolean_not:
+    formula: "c_not_A = Pi_perp(c_packed, m_A) = c_packed - <c_packed, m_A> * m_A"
+    property: "<c_not_A, m_A> == 0 exact (residuo < 1e-15)"
+experimental_verification:
+  script: "verification/C013_attention_algebra/01_test_boolean_attention_memory.py"
+  reading_resonance: 0.5774
+  annihilation_residual: -2.12e-16
+audit_status: "FORMALLY_VERIFIED_AND_CERTIFIED"
