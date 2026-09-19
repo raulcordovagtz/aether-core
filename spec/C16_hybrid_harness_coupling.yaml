@@ -1,0 +1,17 @@
+claim_id: "C-016"
+title: "Careo de Hipótesis para el Operador de Acoplamiento B_k del Harness"
+domain: "Sistemas Dinámicos Híbridos Continuo-Discretos / Álgebra de Lie"
+competing_hypotheses:
+  H1_Correction:
+    formula: "B_k = beta * (u_ALU - <L, u_ALU> * L)"
+    result_affinity: 0.992954
+    status: "OPTIMAL_ENERGY_BALANCE"
+  H2_Constraint:
+    formula: "B_k = 4.0 * (u_ALU - L)"
+    result_affinity: 0.995928
+    status: "MAXIMAL_PROJECTION"
+  H3_Bifurcation:
+    formula: "J_mutated = U_c(u_ALU) * V_c^T - V_c * U_c^T"
+    result_affinity: -0.076805
+    status: "FALSIFIED_CANNOT_CONVERGE"
+audit_status: "FORMALLY_ARBITRATED_AND_CERTIFIED"
