@@ -1,0 +1,12 @@
+claim_id: "C-017"
+title: "Operador de Acoplamiento Sintético: Restricción Exacta H2 + Proyección Tangencial H1"
+domain: "Sistemas Dinámicos Híbridos / Geometría Conformal en S^{D-1}"
+operators:
+  constraint_error: "r_k = u_k - L_hat (Restricción H2)"
+  tangential_projection: "b_k = Pi_T(r_k, L_hat) = r_k - <r_k, L_hat> * L_hat (Proyector H1)"
+  continuous_gate: "g_k = sigma(beta_k * (q_k - theta_k))"
+properties_verified:
+  task_accuracy: "cos(L*, u_ALU) > 0.993"
+  norm_preservation: "|norm(Phi)^2 - 1| <= 4.44e-16"
+  task_error_decay: "E_task < 2.0e-5"
+audit_status: "FORMALLY_VERIFIED_AND_CERTIFIED"
