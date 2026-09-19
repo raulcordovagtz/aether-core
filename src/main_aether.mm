@@ -56,10 +56,13 @@ int main(int argc, char* argv[]) {
         id<MTLLibrary> libMarkov = [device newLibraryWithURL:[NSURL fileURLWithPath:@"metal/c_field_intent_markov_engine.metallib"] error:&err];
         id<MTLLibrary> libGeodesic = [device newLibraryWithURL:[NSURL fileURLWithPath:@"metal/aether_mhc_eml_engine.metallib"] error:&err];
         id<MTLLibrary> libFused = [device newLibraryWithURL:[NSURL fileURLWithPath:@"metal/aether_fused_norm_gemv.metallib"] error:&err];
-        id<MTLLibrary> libSpinorC008 = [device newLibraryWithURL:[NSURL fileURLWithPath:@"metal/aether_c008_cognitive_engine.metallib"] error:&err];
+        id<MTLLibrary> libSpinorC018 = [device newLibraryWithURL:[NSURL fileURLWithPath:@"metal/aether_c018_riemannian_engine.metallib"] error:&err];
+        if (!libSpinorC018) { std::cerr << "❌ Error cargando libSpinorC018\n"; return 1; }
+        id<MTLComputePipelineState> psoC018Red  = [device newComputePipelineStateWithFunction:[libSpinorC018 newFunctionWithName:@"c018_project_reductions"] error:&err];
+        id<MTLComputePipelineState> psoC018Step = [device newComputePipelineStateWithFunction:[libSpinorC018 newFunctionWithName:@"c018_riemannian_step"] error:&err];
         if (!libSpinorC008) { std::cerr << "❌ Error cargando libSpinorC008\n"; return 1; }
-        id<MTLComputePipelineState> psoC008Red  = [device newComputePipelineStateWithFunction:[libSpinorC008 newFunctionWithName:@"c008_project_reductions"] error:&err];
-        id<MTLComputePipelineState> psoC008Step = [device newComputePipelineStateWithFunction:[libSpinorC008 newFunctionWithName:@"c008_cognitive_step"] error:&err];
+        id<MTLComputePipelineState> psoC018Red  = [device newComputePipelineStateWithFunction:[libSpinorC008 newFunctionWithName:@"c008_project_reductions"] error:&err];
+        id<MTLComputePipelineState> psoC018Step = [device newComputePipelineStateWithFunction:[libSpinorC008 newFunctionWithName:@"c008_cognitive_step"] error:&err];
         id<MTLLibrary> libMambaInFused = [device newLibraryWithURL:[NSURL fileURLWithPath:@"metal/aether_fused_mamba_in.metallib"] error:&err];
         if (!libMambaInFused) { std::cerr << "❌ Error cargando libMambaInFused\n"; return 1; }
         id<MTLComputePipelineState> psoMambaIn4Fused = [device newComputePipelineStateWithFunction:[libMambaInFused newFunctionWithName:@"gemv_4bit_mamba_in4_fused"] error:&err];
@@ -207,6 +210,8 @@ int main(int argc, char* argv[]) {
         id<MTLBuffer> bufUlC007 = [device newBufferWithLength:R_C007 * D * sizeof(float) options:MTLResourceStorageModeShared];
         id<MTLBuffer> bufVlC007 = [device newBufferWithLength:R_C007 * D * sizeof(float) options:MTLResourceStorageModeShared];
         id<MTLBuffer> bufVisualPatches = nil;
+        id<MTLBuffer> bufExactALU = [device newBufferWithLength:D * sizeof(float) options:MTLResourceStorageModeShared];
+        std::memset([bufExactALU contents], 0, D * sizeof(float));
         uint32_t num_visual_patches = 0;
 
         // Cargar evidencia visual fáctica ANTES del prefill
@@ -561,7 +566,7 @@ int main(int argc, char* argv[]) {
             for (uint32_t tau = 0; tau < C008EngineConfig::PREFILL_STEPS; ++tau) {
                 float lie_decay = std::exp(-float(tau) / C008EngineConfig::TAU_RELAX);
                 // bufUlC007 contiene u_O_text (atractor semántico)
-                aether_c008_step_dispatch(cmdThought, psoC008Red, psoC008Step, bufPhiC007, bufPhiMidC007, bufRProjC007,
+                aether_c008_step_dispatch(cmdThought, psoC018Red, psoC018Step, bufPhiC007, bufPhiMidC007, bufRProjC007,
                                           bufUcC007, bufVcC007, bufUsC007, bufVsC007, bufUlC007, bufUlC007,
                                           C008EngineConfig::DT, lie_decay);
             }
@@ -694,7 +699,7 @@ int main(int argc, char* argv[]) {
 
                 id<MTLCommandBuffer> cmdC008 = [queue commandBuffer];
                 for (uint32_t s = 0; s < C008EngineConfig::DECODE_STEPS; ++s) {
-                    aether_c008_step_dispatch(cmdC008, psoC008Red, psoC008Step, bufPhiC007, bufPhiMidC007, bufRProjC007,
+                    aether_c008_step_dispatch(cmdC008, psoC018Red, psoC018Step, bufPhiC007, bufPhiMidC007, bufRProjC007,
                                               bufUcC007, bufVcC007, bufUsC007, bufVsC007, bufUlC007, bufUlC007,
                                               C008EngineConfig::DT, 0.05f);
                 }
