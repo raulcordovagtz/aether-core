@@ -1,0 +1,14 @@
+engine_id: "AETHER-C008-COGNITIVE"
+title: "Motor de Pensamiento Profundo: Pozo Atractor y Relajación de Lie"
+description: "Inferencia con fase de asentamiento cognitivo en prefill (tau* = 32) y decode geodésico ligero."
+parameters:
+  D: 5120
+  R: 32
+  prefill_elaboration_steps: 32 # Punto de convergencia óptimo medido (||Phi_dot|| = 0.016)
+  decode_steps: 1
+  coupling_scale: 0.013975424859 # 1.0 / sqrt(5120)
+  mu_attractor: 0.25 # Fuerza del pozo de coherencia
+  tau_relax: 24.0 # Constante de tiempo de relajación de Lie
+  eml_scale: 0.006987712430
+  lyapunov_damping: 0.000003411968
+audit_status: "STANDALONE_COGNITIVE_ENGINE"

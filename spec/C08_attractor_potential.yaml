@@ -1,0 +1,20 @@
+claim_id: "C-008"
+title: "Dinámica de Pensamiento Profundo: Pozo Atractor de Coherencia y Convergencia de Lyapunov"
+domain: "R^{2D}, D=5120, Variedad S^{2D-1}, Álgebra so(2D)"
+potential_functional:
+  formula: "F(S, L) = 0.5*(1 - <S, u_vis>) + 0.5*(1 - <L, u_text>) + 0.5*gamma*(1 - <S, C L>)"
+  gradient:
+    grad_S: "mu_vis * Pi_perp(u_vis, S) + gamma * Pi_perp(C L, S)"
+    grad_L: "mu_text * Pi_perp(u_text, L) + gamma * Pi_perp(C^T S, L)"
+dynamical_system:
+  form: "dPhi/dtau = K Phi - grad F(Phi) + alpha * Pi_perp(F_eml, Phi) - lambda * Phi"
+convergence_criteria:
+  stop_threshold: "||Phi_{tau+1} - Phi_tau|| / ||Phi_tau|| < 1e-4"
+  velocity_decay: "lim_{tau -> tau*} ||dPhi/dtau|| -> 0"
+properties_to_verify:
+  1_lyapunov_descent:
+    statement: "dF/dtau <= 0 (El pensamiento minimiza la contradicción)"
+  2_asymptotic_settling:
+    statement: "La velocidad de flujo desciende al acercarse al atractor Phi*"
+audit_classification:
+  status: "PENDING_FORMAL_VERIFICATION"

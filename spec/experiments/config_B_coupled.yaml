@@ -1,0 +1,9 @@
+experiment_id: "EXP-C007-B"
+description: "Acoplamiento Geodésico Canónico Activo (C = 1 / sqrt(D)). Isomorfismo dinámico."
+parameters:
+  D: 5120
+  R: 32
+  steps: 64
+  coupling_scale: 0.013975424859373685 # 1.0 / sqrt(5120)
+  eml_scale: 0.006987712430
+  lyapunov_damping: 0.0000034119689598

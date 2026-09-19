@@ -1,0 +1,9 @@
+experiment_id: "EXP-C007-A"
+description: "Ablación de Acoplamiento Multimodal (C = 0). Grados de libertad disjuntos."
+parameters:
+  D: 5120
+  R: 32
+  steps: 64
+  coupling_scale: 0.0 # C = 0 exacto (Sin torsión visual en decode)
+  eml_scale: 0.006987712430 # kappa_ref / 2.0
+  lyapunov_damping: 0.0000034119689598

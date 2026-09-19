@@ -1,0 +1,8 @@
+experiment_id: "C012-SLIP-METAL"
+title: "Inyección Homeostática de Certeza Lógica en Flujo Puerto-Hamiltoniano"
+description: "Activación asíncrona de un atractor lógico fuerte (beta) en tau=32."
+parameters:
+  D: 5120
+  R: 32
+  beta_logical_attractor: 2.0
+  dissipation_M: 0.25

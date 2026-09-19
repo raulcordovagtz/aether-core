@@ -1,0 +1,21 @@
+claim_id: "C-007"
+title: "Biespinor Multimodal Acoplado con Normalización Canónica de Dimensión"
+domain: "R^{2D}, D=5120, Manifold S^{2D-1}"
+parameters_derivation:
+  coupling_scale:
+    formula: "1.0 / sqrt(D)"
+    value_d5120: 0.013975424859373685
+    justification: "Invarianza de escala del conmutador de Lie bajo métrica euclidiana R^D"
+  step_size:
+    formula: "1.0 / steps"
+    steps: 64
+    value: 0.015625
+  lyapunov_damping:
+    formula: "coupling_scale * (step_size ** 2)"
+    value: 0.0000034119689598
+    justification: "Cota de amortiguamiento crítico para integrador simpléctico de punto medio"
+  eml_scale:
+    formula: "coupling_scale / 2.0"
+    value: 0.0069877124296868425
+    justification: "Subordinación del campo no lineal al flujo geodésico primario"
+audit_status: "ANALYTICALLY_NORMALIZED"

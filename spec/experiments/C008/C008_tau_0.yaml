@@ -1,0 +1,8 @@
+experiment_id: "C008-TAU-0"
+description: "Línea base sin elaboración interna (0 pasos)."
+parameters:
+  D: 5120
+  R: 32
+  elaboration_steps: 0
+  coupling_scale: 0.013975424859
+  lyapunov_damping: 0.000003411968

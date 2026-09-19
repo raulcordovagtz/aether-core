@@ -1,0 +1,9 @@
+description: Barrido de acoplamiento kappa factor 4.0x
+experiment_id: EXP_K_4.00
+parameters:
+  D: 5120
+  R: 32
+  coupling_scale: 0.05590169943749474
+  eml_scale: 0.006987712429686843
+  lyapunov_damping: 3.4119689598080286e-06
+  steps: 64

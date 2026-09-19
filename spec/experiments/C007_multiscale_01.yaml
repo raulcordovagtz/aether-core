@@ -1,0 +1,14 @@
+experiment_id: "C007-MULTISCALE-01"
+status: "candidate"
+description: "Configuración multiescala: 64 pasos profundos en prefill, 1 paso geodésico recurrente en decode."
+parameters:
+  D: 5120
+  R: 32
+  prefill_spin_steps: 64
+  decode_spin_steps: 1
+  coupling_scale: 0.013975424859373685 # 1.0 / sqrt(5120)
+  eml_scale: 0.006987712430
+  lyapunov_damping: 0.0000034119689598
+hypothesis:
+  throughput_gain: "Incremento significativo en tokens/s al reducir encoders Metal de 256 a 4 por token en decode."
+  grounding_retention: "Preservación del reconocimiento factual adquirido en prefill profundo."
