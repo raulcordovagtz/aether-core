@@ -151,16 +151,18 @@ print()
 | `gamma` | 0.35 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Intensidad del choque cinético |
 | `kappa` | 0.15 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Balance de energía de nucleación |
 | `theta_steer` | 0.35 | Geodésica $S^{D-1}$ | Desviación angular total acumulada |
+| `tau_relax` | 45.0 | Radiación de Hawking | Escala temporal de descarga entálpica ($d\mathcal{E}/dt < 0$, $r_s \to 0$) |
 | `tau_steps` | 32 | `aether_vlm/settling.py` | Pasos de evolución Puerto-Hamiltoniana |
 
-Para ajustar parámetros al instanciar:
+Para ajustar parámetros al instanciar (o dinámicamente vía `aether.update_parameters(...)`):
 ```python
 aether = AetherEngine(
     model, processor,
     nu=0.12,
     gamma=0.35,
     kappa=0.15,
-    theta_steer=0.35
+    theta_steer=0.35,
+    tau_relax=45.0  # Disuelve el horizonte de Schwarzschild previniendo ciclos límite
 )
 ```
 

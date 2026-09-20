@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, math
 import mlx.core as mx
 try:
     from . import aether_native_c
@@ -9,13 +9,15 @@ from .settling import run_deep_thought_settling
 class AetherCoupledLayer:
     """
     Envoltura de capa que delega la evolución geodésica directamente al módulo C++ nativo.
+    Aplica radiación de Hawking del atractor: modulación geodésica decayendo con escala tau_relax.
     """
-    def __init__(self, original_layer, layer_idx, num_layers=64, theta_steer=0.35):
+    def __init__(self, original_layer, layer_idx, num_layers=64, theta_steer=0.35, tau_relax=45.0):
         self.original_layer = original_layer
         self.layer_idx = layer_idx
         self.num_layers = num_layers
         self.dt = 1.0 / float(num_layers)
         self.theta_step = theta_steer / float(num_layers)
+        self.tau_relax = tau_relax
         self.state_ref = None 
         self.active = False
         self.call_count = 0
@@ -33,15 +35,22 @@ class AetherCoupledLayer:
             return h
 
         self.call_count += 1
+
+        # Radiación de Hawking: descarga de entalpía y contracción del radio de Schwarzschild r_s(t) -> 0
+        t = self.state_ref.get("gen_step", 0)
+        tau = self.state_ref.get("tau_relax", self.tau_relax)
+        decay = math.exp(-t / tau) if (tau is not None and tau > 0) else 1.0
+        effective_theta_step = self.theta_step * decay
+
         # Invocación directa a la extensión C++ nativa
         if h.shape[1] == 1:
-            h_mod = aether_native_c.dispatch_riemannian_step(h, u_target, self.theta_step)
+            h_mod = aether_native_c.dispatch_riemannian_step(h, u_target, effective_theta_step)
             # En la capa terminal, registrar el vector de desplazamiento tangencial v_drag
             if self.layer_idx == (self.num_layers - 1):
                 self.state_ref["v_drag"] = h_mod[0, 0, :] - h[0, 0, :]
             return h_mod
         else:
-            h_last = aether_native_c.dispatch_riemannian_step(h[0, -1, :], u_target, self.theta_step)
+            h_last = aether_native_c.dispatch_riemannian_step(h[0, -1, :], u_target, effective_theta_step)
             if self.layer_idx == (self.num_layers - 1):
                 self.state_ref["v_drag"] = h_last - h[0, -1, :]
             return mx.concatenate([h[:, :-1, :], h_last[None, None, :]], axis=1)
@@ -66,13 +75,15 @@ class AetherCollapseHead:
     """
     Capa de Colapso: Confinamiento Conforme en H+ y Condensación de Gibbs.
     Resuelve la anisotropía del vocabulario mediante proyección esférica covariante S^{D-1}.
-    Elimina la singularidad monótona ('el el el...') garantizando Delta_G in [0, 2*kappa] subset R+.
+    Elimina la singularidad monótona ('el el el...') y previene horizontes de Schwarzschild
+    mediante Radiación de Hawking (descarga entrópica dE/dt < 0 con escala tau_relax).
     """
-    def __init__(self, original_lm_head, nu=0.12, gamma=0.35, kappa=0.15):
+    def __init__(self, original_lm_head, nu=0.12, gamma=0.35, kappa=0.15, tau_relax=45.0):
         self.original_lm_head = original_lm_head
         self.nu = nu
         self.gamma = gamma
         self.kappa = kappa
+        self.tau_relax = tau_relax
         self.state_ref = None
         self.active = False
         self.call_count = 0
@@ -116,34 +127,51 @@ class AetherCollapseHead:
             return self.original_lm_head(h)
 
         self.call_count += 1
+
+        # Radiación de Hawking: Descarga de entalpía y evaporación del horizonte r_s(t) -> 0
+        t = self.state_ref.get("gen_step", 0)
+        tau = self.state_ref.get("tau_relax", self.tau_relax)
+        decay = math.exp(-t / tau) if (tau is not None and tau > 0) else 1.0
+
+        delta_G_eff = delta_G * decay
+        nu_eff = self.nu * decay
+        gamma_eff = self.gamma * decay
+
         # Invocación directa al pipeline de condensación covariante en C++ nativo (H+)
-        # Pasa tensores crudos de cuantización y barrera de Gibbs no-negativa
+        # Pasa tensores crudos de cuantización y barrera de Gibbs evaporativa
         z_condensed = aether_native_c.dispatch_full_collapse(
             h,
             v_drag if v_drag is not None else mx.zeros_like(h[0, 0, :]),
-            delta_G,
+            delta_G_eff,
             self.head_w, self.head_scales, self.head_biases,
             self.head_group_size, self.head_bits,
-            self.nu, self.gamma
+            nu_eff, gamma_eff
         )
         self.last_cond_logits = z_condensed
+
+        # Incrementar el paso de generación propio para tokens autorregresivos (h.shape[1] == 1)
+        if h.shape[1] == 1:
+            self.state_ref["gen_step"] = t + 1
+
         return z_condensed
 
 class AetherEngine:
     """
-    Orquestador soberano en silicio con proyección covariante en H+.
+    Orquestador soberano en silicio con proyección covariante en H+
+    y radiación de Hawking del horizonte de Schwarzschild.
     """
-    def __init__(self, model, processor, nu=0.12, gamma=0.35, kappa=0.15, theta_steer=0.35):
+    def __init__(self, model, processor, nu=0.12, gamma=0.35, kappa=0.15, theta_steer=0.35, tau_relax=45.0):
         self.model = model
         self.processor = processor
         self.nu = nu
         self.gamma = gamma
         self.kappa = kappa
         self.theta_steer = theta_steer
+        self.tau_relax = tau_relax
         self.num_layers = len(self.model.language_model.model.layers)
         self.hooked_layers = []
         self.hooked_head = None
-        self.state = {}
+        self.state = {"gen_step": 0, "tau_relax": tau_relax}
         self._install_circuit()
 
     def _install_circuit(self):
@@ -151,7 +179,10 @@ class AetherEngine:
         half = self.num_layers // 2
         for l in range(self.num_layers):
             orig = self.model.language_model.model.layers[l]
-            hook = AetherCoupledLayer(orig, layer_idx=l, num_layers=self.num_layers, theta_steer=self.theta_steer)
+            hook = AetherCoupledLayer(
+                orig, layer_idx=l, num_layers=self.num_layers,
+                theta_steer=self.theta_steer, tau_relax=self.tau_relax
+            )
             # Modulación de capas: capas tempranas (0..half-1) theta=0 (preserva sintaxis local)
             # Capas tardías (half..num_layers-1): rampa progresiva de síntesis semántica
             if l < half:
@@ -171,12 +202,20 @@ class AetherEngine:
             if hasattr(self.model.language_model, "args") and hasattr(self.model.language_model.args, "tie_word_embeddings"):
                 self.model.language_model.args.tie_word_embeddings = False
 
-        self.hooked_head = AetherCollapseHead(orig_head, nu=self.nu, gamma=self.gamma, kappa=self.kappa)
+        self.hooked_head = AetherCollapseHead(
+            orig_head, nu=self.nu, gamma=self.gamma, kappa=self.kappa, tau_relax=self.tau_relax
+        )
         self.hooked_head.state_ref = self.state
         self.model.language_model.lm_head = self.hooked_head
 
-    def update_parameters(self, theta_steer=None, gamma=None, kappa=None, nu=None):
-        """Actualiza parámetros dinámicamente recalculando la barrera de Gibbs y la modulación geodésica."""
+    def update_parameters(self, theta_steer=None, gamma=None, kappa=None, nu=None, tau_relax=None):
+        """Actualiza parámetros dinámicamente recalculando la barrera de Gibbs, modulación geodésica y relajación."""
+        if tau_relax is not None:
+            self.tau_relax = tau_relax
+            self.state["tau_relax"] = tau_relax
+            self.hooked_head.tau_relax = tau_relax
+            for hook in self.hooked_layers:
+                hook.tau_relax = tau_relax
         if theta_steer is not None:
             self.theta_steer = theta_steer
             half = self.num_layers // 2
@@ -207,6 +246,7 @@ class AetherEngine:
             self.hooked_head.active = active
 
     def reset_counters(self):
+        self.state["gen_step"] = 0
         for hook in self.hooked_layers:
             hook.call_count = 0
         if self.hooked_head:
@@ -239,6 +279,8 @@ class AetherEngine:
         mx.eval(z_L_star)
         mx.eval(delta_G)
 
+        self.state["gen_step"] = 0
+        self.state["tau_relax"] = self.tau_relax
         self.state["u_vis"] = u_vis
         self.state["u_txt"] = u_txt
         self.state["L_star"] = L_star
