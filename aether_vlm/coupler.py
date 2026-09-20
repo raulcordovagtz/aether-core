@@ -36,14 +36,14 @@ class AetherCoupledLayer:
         # Invocación directa a la extensión C++ nativa
         if h.shape[1] == 1:
             h_mod = aether_native_c.dispatch_riemannian_step(h, u_target, self.theta_step)
-            # En la capa terminal (63), registrar el vector de velocidad tangencial v_drag
+            # En la capa terminal, registrar el vector de desplazamiento tangencial v_drag
             if self.layer_idx == (self.num_layers - 1):
-                self.state_ref["v_drag"] = (h_mod[0, 0, :] - h[0, 0, :]) / self.dt
+                self.state_ref["v_drag"] = h_mod[0, 0, :] - h[0, 0, :]
             return h_mod
         else:
             h_last = aether_native_c.dispatch_riemannian_step(h[0, -1, :], u_target, self.theta_step)
             if self.layer_idx == (self.num_layers - 1):
-                self.state_ref["v_drag"] = (h_last - h[0, -1, :]) / self.dt
+                self.state_ref["v_drag"] = h_last - h[0, -1, :]
             return mx.concatenate([h[:, :-1, :], h_last[None, None, :]], axis=1)
 
 class TiedLinearHead:

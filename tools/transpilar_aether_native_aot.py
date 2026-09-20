@@ -38,16 +38,24 @@ array riemannian_step_cpp(const array& h, const array& u_target, float theta_ste
     auto norm_h = sqrt(sum(h * h, -1, true) + 1e-12f);
     auto h_unit = h / norm_h;
 
-    auto proj = sum(u_target * h_unit, -1, true);
-    auto v_vec = u_target - proj * h_unit;
+    auto norm_u = sqrt(sum(u_target * u_target, -1, true) + 1e-12f);
+    auto u_unit = u_target / norm_u;
+
+    auto proj = sum(u_unit * h_unit, -1, true);
+    auto v_vec = u_unit - proj * h_unit;
     auto norm_v = sqrt(sum(v_vec * v_vec, -1, true) + 1e-12f);
-    auto v_unit = v_vec / norm_v;
+
+    auto is_collinear = norm_v < 1e-6f;
+    auto v_unit = where(is_collinear, zeros_like(v_vec), v_vec / norm_v);
 
     auto cos_t = cos(array(theta_step));
     auto sin_t = sin(array(theta_step));
 
-    auto h_steered = (cos_t * h_unit) + (sin_t * v_unit);
-    return h_steered * norm_h;
+    auto steered = where(is_collinear, h_unit, (cos_t * h_unit) + (sin_t * v_unit));
+    auto norm_steered = sqrt(sum(steered * steered, -1, true) + 1e-12f);
+    auto steered_unit = steered / norm_steered;
+
+    return steered_unit * norm_h;
 }}
 
 // ─── 2. KERNEL C++: CONDENSACIÓN DE VAPOR DE FLUIDOS (C-021) ─────────────────
@@ -63,8 +71,13 @@ array vapor_condensation_cpp(
     // Amortiguamiento Viscoso Laminar
     auto z_visc = (1.0f - nu) * z_impact + nu * z_mean;
 
-    // Balance de Energía de Nucleación
-    auto z_cond = z_visc + kappa * z_L_star;
+    // Normalización de escala para que kappa actúe respecto a la dispersión térmica de logits
+    auto z_L_mean = mean(z_L_star, -1, true);
+    auto z_L_std  = sqrt(var(z_L_star, -1, true) + 1e-6f);
+    auto z_L_unit = (z_L_star - z_L_mean) / z_L_std;
+
+    // Balance de Energía de Nucleación (escalado térmicamente)
+    auto z_cond = z_visc + (kappa * z_std) * z_L_unit;
 
     // Normalización de Entalpía
     auto z_norm = (z_cond - mean(z_cond, -1, true)) / sqrt(var(z_cond, -1, true) + 1e-6f);
