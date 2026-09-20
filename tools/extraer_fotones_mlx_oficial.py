@@ -1,21 +1,21 @@
-import os, struct
+import os, sys, struct
 import mlx.core as mx
 import numpy as np
 from PIL import Image
 from mlx_vlm import load
 
-print("=================================================================================")
-print(" 📷 EXTRACCIÓN CANÓNICA: 27 CAPAS ViT (Qwen 3.5 en GPU Metal)")
-print("=================================================================================")
-
 model_path = os.path.expanduser("~/.lmstudio/models/lmstudio-community/Qwen3.8-27B-MLX-4bit")
-img_path = "/Users/crotalo/Downloads/005.jpg"
+img_path = "/Users/crotalo/Downloads/test.jpg"
 
-print("• Cargando Torre de Visión oficial...")
+if not os.path.exists(img_path):
+    print(f"❌ Error: No existe {img_path}")
+    sys.exit(1)
+
+print(f"• Cargando modelo y Torre de Visión oficial...")
 model, processor = load(model_path)
 
 img = Image.open(img_path).convert("RGB")
-print(f"✓ Imagen 005.jpg cargada: {img.size[0]}x{img.size[1]} píxeles.")
+print(f"✓ Imagen test.jpg cargada: {img.size[0]}x{img.size[1]} píxeles.")
 
 messages = [
     {
@@ -28,37 +28,32 @@ messages = [
 ]
 
 prompt_text = processor.apply_chat_template(messages, add_generation_prompt=True)
-print("✓ Prompt formateado con Chat Template oficial de Qwen.")
 
 # Preprocesar en MLX
 inputs = processor(text=[prompt_text], images=[img], return_tensors="mlx")
 
-# Pasar por las 27 capas ViT en GPU
+# Pasar por la Torre de Visión oficial en GPU (ViT completo)
+print("• Ejecutando Torre de Visión (ViT completo) en GPU Metal...")
 out = model.vision_tower(inputs["pixel_values"], inputs["image_grid_thw"])
-visual_features = out[0] # Tensor [644, 5120]
+visual_features = out[0] # Tensor [N_patches, 5120]
 mx.eval(visual_features)
 
+n_patches = visual_features.shape[0]
+print(f"✓ {n_patches} parches semánticos extraídos por el ViT en GPU (Dimensión: {visual_features.shape[1]}).")
+
+# Guardar visual_embeddings.bin oficial
 visual_np = np.array(visual_features, dtype=np.float32)
-print(f"✓ Parches ViT contextualizados: {visual_np.shape[0]} parches de dimensión {visual_np.shape[1]}.")
-
-# 1. Guardar visual_embeddings.bin
 visual_np.tofile("visual_embeddings.bin")
-print(f"✓ visual_embeddings.bin generado ({os.path.getsize('visual_embeddings.bin')} bytes, 644 parches reales).")
+print(f"✓ visual_embeddings.bin generado ({os.path.getsize('visual_embeddings.bin')} bytes).")
 
-# 2. Compilar prompt_input.bin
-input_ids = np.array(inputs["input_ids"][0]).tolist()
-tokens_bin = [int(t) for t in input_ids]
-
-# Cerrar el bloque <think> para forzar la descripción inmediata
-# Añadimos los tokens: <think>\n\n</think>\n
-think_suffix = processor.tokenizer.encode("<think>\n\n</think>\n", add_special_tokens=False)
-tokens_bin.extend(think_suffix)
+# Extraer tokens del prompt con la cantidad exacta de parches
+input_ids = inputs["input_ids"][0].tolist()
 
 with open("prompt_input.bin", "wb") as f:
-    for t in tokens_bin:
+    for t in input_ids:
         f.write(struct.pack("I", t))
 
-print(f"✓ prompt_input.bin compilado: {len(tokens_bin)} tokens (644 parches integrados + sufijo cerrado de razonamiento).")
+print(f"✓ prompt_input.bin compilado: {len(input_ids)} tokens exactos del pipeline oficial.")
 print("=================================================================================")
-print(" 🏆 FOTONES REALES Y PROMPT CANÓNICO LISTOS PARA AETHER ENGINE.")
+print(" 🏆 EXTRACCIÓN ViT CONCLUIDA: El motor ya tiene los fotones reales del buque.")
 print("=================================================================================")
