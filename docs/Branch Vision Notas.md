@@ -15760,3 +15760,4 @@ cd /Users/crotalo/aether_engine
 ```
 
 Pega estos comandos en la terminal. El motor integrará la geometría riemanniana sin renormalización manual y lanzará la generación real en tu M2 Max. Muéstrame el reporte.
+___

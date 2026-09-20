@@ -1,0 +1,38 @@
+Para resolver este problema de lógica, debemos analizar las pistas paso a paso, estableciendo relaciones entre los astronautas y los módulos, y luego deducir el resultado final.
+
+### Paso 1: Análisis de las pistas
+
+1.  **Botánica**: No está en Alfa ni Delta.
+    *   Esto significa que la Botánica está en Beta, Gamma o Delta.
+2.  **Marta**: Está en Gamma y no es la experta en Telecomunicaciones.
+    *   Esto implica que la especialidad de Marta es Botánica, Geología, Robótica o Telecomunicaciones.
+3.  **Robótica**: Está en Delta.
+    *   Esto implica que la especialidad de la Robótica es en Delta.
+4.  **Kenji**: Es el especialista en Geología.
+    *   Esto implica que la especialidad de Kenji es Geología.
+5.  **Leo**: Está en Alfa.
+
+### Paso 2: Construcción de la matriz de asignación
+
+Ahora analizamos las posiciones disponibles para cada astronauta basado en las pistas:
+
+*   **Módulos**: Alfa, Beta, Gamma, Delta.
+*   **Especialidades**: Botánica, Geología, Robótica, Telecomunicaciones.
+
+**Deduciones directas:**
+*   **Kenji**: Es Geología.
+*   **Robótica**: Está en Delta.
+*   **Marta**: Está en Gamma y no es la experta en Telecomunicaciones.
+    *   La especialidad de Marta no puede ser Tele.
+    *   La especialidad de Marta no puede ser Botánica (porque no está en Alfa ni Delta).
+    *   La especialidad de Marta no puede ser Robótica (porque está en Gamma).
+    *   Por lo tanto, la especialidad de Marta debe ser **Telecomunicaciones**.
+
+**Deduciones por posición:**
+*   **Marta**: Módulo = Gamma, Especialidad = Telecomunicaciones.
+*   **Kenji**: Módulo = Geología, Especialidad = Geología.
+*   **Robótica**: Módulo = Delta, Especialidad = Robótica.
+
+**Resto para Leo:**
+*   Tenemos los módulos: Alfa, Beta, Gamma, Delta ocupados por Kenji, Marta y la Robótica.
+*   El módulo **Alfa** está ocupado por **Leo**
