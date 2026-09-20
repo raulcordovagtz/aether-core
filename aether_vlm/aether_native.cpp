@@ -45,9 +45,8 @@ array riemannian_step_cpp(const array& h, const array& u_target, float theta_ste
 // ─── 2. KERNEL C++: CONDENSACIÓN DE VAPOR DE FLUIDOS (C-021) ─────────────────
 array vapor_condensation_cpp(
     const array& z_impact,
-    const array& z_L_star,
-    float nu = CANONICAL_NU_VISCOSITY,
-    float kappa = CANONICAL_KAPPA_NUCLEATION
+    const array& delta_G,
+    float nu = CANONICAL_NU_VISCOSITY
 ) {
     auto z_mean = mean(z_impact, -1, true);
     auto z_std  = sqrt(var(z_impact, -1, true) + 1e-6f);
@@ -55,13 +54,8 @@ array vapor_condensation_cpp(
     // Amortiguamiento Viscoso Laminar
     auto z_visc = (1.0f - nu) * z_impact + nu * z_mean;
 
-    // Normalización de escala para que kappa actúe respecto a la dispersión térmica de logits
-    auto z_L_mean = mean(z_L_star, -1, true);
-    auto z_L_std  = sqrt(var(z_L_star, -1, true) + 1e-6f);
-    auto z_L_unit = (z_L_star - z_L_mean) / z_L_std;
-
-    // Balance de Energía de Nucleación (escalado térmicamente)
-    auto z_cond = z_visc + (kappa * z_std) * z_L_unit;
+    // Confinamiento Covariante al Cono Positivo de Gibbs (H+): z_visc - Delta_G
+    auto z_cond = z_visc - delta_G;
 
     // Normalización de Entalpía
     auto z_norm = (z_cond - mean(z_cond, -1, true)) / sqrt(var(z_cond, -1, true) + 1e-6f);
@@ -72,15 +66,14 @@ array vapor_condensation_cpp(
 array collapse_and_condense_cpp(
     const array& h_final,
     const array& v_drag,
-    const array& z_L_star,
+    const array& delta_G,
     const array& head_w,
     const array& head_scales,
     const array& head_biases,
     int group_size = 64,
     int bits = 4,
     float nu = CANONICAL_NU_VISCOSITY,
-    float gamma = CANONICAL_GAMMA_SHOCK,
-    float kappa = CANONICAL_KAPPA_NUCLEATION
+    float gamma = CANONICAL_GAMMA_SHOCK
 ) {
     // 1. Choque cinético en el espacio latente
     float norm_factor = gamma / std::sqrt(1.0f + nu * nu);
@@ -96,8 +89,8 @@ array collapse_and_condense_cpp(
         /* mode = */ "affine"
     );
 
-    // 3. Condensación de vapor atómica sobre los logits
-    return vapor_condensation_cpp(z_impact, z_L_star, nu, kappa);
+    // 3. Condensación de vapor con barrera de Gibbs covariante en H+
+    return vapor_condensation_cpp(z_impact, delta_G, nu);
 }
 
 // ─── ENLACE DEL MÓDULO NANOBIND ──────────────────────────────────────────────
@@ -105,10 +98,10 @@ NB_MODULE(aether_native_c, m) {
     m.def("dispatch_riemannian_step", &riemannian_step_cpp, "Exp-Map Riemanniano en C++ nativo",
           nb::arg("h"), nb::arg("u_target"), nb::arg("theta_step"));
     m.def("dispatch_vapor_condensation", &vapor_condensation_cpp, "Condensación de vapor C-021 en C++ nativo",
-          nb::arg("z_impact"), nb::arg("z_L_star"), nb::arg("nu") = CANONICAL_NU_VISCOSITY, nb::arg("kappa") = CANONICAL_KAPPA_NUCLEATION);
+          nb::arg("z_impact"), nb::arg("delta_G"), nb::arg("nu") = CANONICAL_NU_VISCOSITY);
     m.def("dispatch_full_collapse", &collapse_and_condense_cpp, "Pipeline de Colapso Total en C++ nativo puro",
-          nb::arg("h_final"), nb::arg("v_drag"), nb::arg("z_L_star"),
+          nb::arg("h_final"), nb::arg("v_drag"), nb::arg("delta_G"),
           nb::arg("head_w"), nb::arg("head_scales"), nb::arg("head_biases"),
           nb::arg("group_size") = 64, nb::arg("bits") = 4,
-          nb::arg("nu") = CANONICAL_NU_VISCOSITY, nb::arg("gamma") = CANONICAL_GAMMA_SHOCK, nb::arg("kappa") = CANONICAL_KAPPA_NUCLEATION);
+          nb::arg("nu") = CANONICAL_NU_VISCOSITY, nb::arg("gamma") = CANONICAL_GAMMA_SHOCK);
 }

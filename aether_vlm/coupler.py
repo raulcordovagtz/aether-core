@@ -64,9 +64,9 @@ class TiedLinearHead:
 
 class AetherCollapseHead:
     """
-    Capa de Colapso: Ejecuta el Choque Cinético (gamma), la Proyección (W_head)
-    y la Condensación de Vapor (nu, kappa) íntegramente en C++ nativo.
-    CERO callbacks a Python: los tensores de cuantización se extraen una vez al inicio.
+    Capa de Colapso: Confinamiento Conforme en H+ y Condensación de Gibbs.
+    Resuelve la anisotropía del vocabulario mediante proyección esférica covariante S^{D-1}.
+    Elimina la singularidad monótona ('el el el...') garantizando Delta_G in [0, 2*kappa] subset R+.
     """
     def __init__(self, original_lm_head, nu=0.12, gamma=0.35, kappa=0.15):
         self.original_lm_head = original_lm_head
@@ -86,6 +86,14 @@ class AetherCollapseHead:
         self.head_group_size = getattr(original_lm_head, 'group_size', 64)
         self.head_bits = getattr(original_lm_head, 'bits', 4)
 
+        # Precalcular normas euclídeas de las filas de W_head para invarianza covariante en S^{D-1}
+        deq = mx.dequantize(
+            self.head_w, self.head_scales, self.head_biases,
+            group_size=self.head_group_size, bits=self.head_bits
+        )
+        self.row_norms = mx.sqrt(mx.sum(deq * deq, axis=-1) + 1e-12)
+        mx.eval(self.row_norms)
+
     def __getattr__(self, name):
         return getattr(self.original_lm_head, name)
 
@@ -94,26 +102,36 @@ class AetherCollapseHead:
             return self.original_lm_head(h)
 
         v_drag = self.state_ref.get("v_drag")
-        z_L_star = self.state_ref.get("z_L_star")
+        delta_G = self.state_ref.get("delta_G")
 
-        if v_drag is None or z_L_star is None:
+        # Si kappa fue modificado dinámicamente en el objeto, recalcular delta_G con la nueva escala
+        if delta_G is not None and getattr(self, "_last_kappa", None) != self.kappa:
+            cos_theta = self.state_ref.get("cos_theta")
+            if cos_theta is not None:
+                delta_G = 0.5 * self.kappa * mx.square(1.0 - cos_theta)
+                self.state_ref["delta_G"] = delta_G
+                self._last_kappa = self.kappa
+
+        if delta_G is None:
             return self.original_lm_head(h)
 
         self.call_count += 1
-        # Invocación directa al pipeline completo en C++ nativo
-        # Pasa tensores crudos de cuantización — CERO Python en el colapso
+        # Invocación directa al pipeline de condensación covariante en C++ nativo (H+)
+        # Pasa tensores crudos de cuantización y barrera de Gibbs no-negativa
         z_condensed = aether_native_c.dispatch_full_collapse(
-            h, v_drag, z_L_star,
+            h,
+            v_drag if v_drag is not None else mx.zeros_like(h[0, 0, :]),
+            delta_G,
             self.head_w, self.head_scales, self.head_biases,
             self.head_group_size, self.head_bits,
-            self.nu, self.gamma, self.kappa
+            self.nu, self.gamma
         )
         self.last_cond_logits = z_condensed
         return z_condensed
 
 class AetherEngine:
     """
-    Orquestador soberano en silicio.
+    Orquestador soberano en silicio con proyección covariante en H+.
     """
     def __init__(self, model, processor, nu=0.12, gamma=0.35, kappa=0.15, theta_steer=0.35):
         self.model = model
@@ -130,9 +148,17 @@ class AetherEngine:
 
     def _install_circuit(self):
         self.hooked_layers = []
+        half = self.num_layers // 2
         for l in range(self.num_layers):
             orig = self.model.language_model.model.layers[l]
             hook = AetherCoupledLayer(orig, layer_idx=l, num_layers=self.num_layers, theta_steer=self.theta_steer)
+            # Modulación de capas: capas tempranas (0..half-1) theta=0 (preserva sintaxis local)
+            # Capas tardías (half..num_layers-1): rampa progresiva de síntesis semántica
+            if l < half:
+                hook.theta_step = 0.0
+            else:
+                progress = (l - half + 1) / float(self.num_layers - half)
+                hook.theta_step = (self.theta_steer / float(self.num_layers - half)) * progress
             hook.state_ref = self.state
             self.model.language_model.model.layers[l] = hook
             self.hooked_layers.append(hook)
@@ -148,6 +174,31 @@ class AetherEngine:
         self.hooked_head = AetherCollapseHead(orig_head, nu=self.nu, gamma=self.gamma, kappa=self.kappa)
         self.hooked_head.state_ref = self.state
         self.model.language_model.lm_head = self.hooked_head
+
+    def update_parameters(self, theta_steer=None, gamma=None, kappa=None, nu=None):
+        """Actualiza parámetros dinámicamente recalculando la barrera de Gibbs y la modulación geodésica."""
+        if theta_steer is not None:
+            self.theta_steer = theta_steer
+            half = self.num_layers // 2
+            for l, hook in enumerate(self.hooked_layers):
+                if l < half:
+                    hook.theta_step = 0.0
+                else:
+                    progress = (l - half + 1) / float(self.num_layers - half)
+                    hook.theta_step = (self.theta_steer / float(self.num_layers - half)) * progress
+        if gamma is not None:
+            self.gamma = gamma
+            self.hooked_head.gamma = gamma
+        if nu is not None:
+            self.nu = nu
+            self.hooked_head.nu = nu
+        if kappa is not None:
+            self.kappa = kappa
+            self.hooked_head.kappa = kappa
+            if "z_L_star" in self.state and self.hooked_head.row_norms is not None:
+                cos_theta = self.state["z_L_star"] / self.hooked_head.row_norms
+                self.state["delta_G"] = 0.5 * self.kappa * mx.square(1.0 - cos_theta)
+                mx.eval(self.state["delta_G"])
 
     def set_active(self, active: bool):
         for hook in self.hooked_layers:
@@ -178,14 +229,22 @@ class AetherEngine:
         # 3. Pensamiento Profundo tau* = 32
         L_star, telemetria = run_deep_thought_settling(u_vis, u_txt, tau_steps=32)
 
-        # 4. Pre-cálculo del perfil de nucleación de L* sobre logits en C++
+        # 4. Proyección conforme covariante en S^{D-1} sobre H+
+        # Invarianza de norma radial: cos(theta_i) = <w_i, L*> / ||w_i||
         z_L_star = self.hooked_head.original_lm_head(L_star)
+        cos_theta = z_L_star / self.hooked_head.row_norms
+        
+        # Barrera de Gibbs confinada al cono positivo R+: Delta_G = (kappa/2) * (1 - cos(theta))^2
+        delta_G = 0.5 * self.kappa * mx.square(1.0 - cos_theta)
         mx.eval(z_L_star)
+        mx.eval(delta_G)
 
         self.state["u_vis"] = u_vis
         self.state["u_txt"] = u_txt
         self.state["L_star"] = L_star
         self.state["z_L_star"] = z_L_star
+        self.state["cos_theta"] = cos_theta
+        self.state["delta_G"] = delta_G
         self.state["v_drag"] = None
 
         self.set_active(True)
