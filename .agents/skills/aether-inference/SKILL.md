@@ -149,27 +149,29 @@ print()
 
 | Perfil | Modelos | Capas $N$ | Dim $D$ | $\theta_{\text{steer}}$ | $\kappa$ | $\nu$ | $\gamma$ | Capas Activas |
 |--------|---------|-----------|---------|-------------------------|----------|-------|-------|---------------|
-| `compact_tied` | Qwen3.5-0.8B, 2B | 24 | 1024-2048 | 1.40 | 2.00 | 0.08 | 0.95 | 50% (capas 12..24) |
+| `edge_compact` | Qwen3.5-0.8B | 24 | 1024 | 0.25 | 0.15 | 0.08 | 0.25 | 50% (capas 12..24) |
+| `compact_tied` | Qwen3.5-2B | 24 | 2048 | 1.40 | 2.00 | 0.08 | 0.95 | 50% (capas 12..24) |
 | `frontier_dense` | Qwen3.8-27B | 64 | 5120 | 2.20 | 1.20 | 0.06 | 0.85 | 60% (capas 26..64) |
 
 > [!NOTE]
-> - En modelos de 64 capas (`frontier_dense`), las capas iniciales (0..25) operan con recurrencia lineal (Gated DeltaNet); el motor concentra el timoneo geodésico en el 60% superior de las capas (26..64).
-> - $\kappa$ se calibra automáticamente a 1.20 en $D=5120$ para compensar la concentración de medida en hiper-esferas $S^{5119}$.
+> - **Edge (0.8B)**: Al tener menor capacidad latente, un acoplamiento gravitatorio excesivo causa balbuceo; el perfil `edge_compact` provee un timoneo suave ($\theta=0.25, \kappa=0.15$).
+> - **Frontier (27B)**: En modelos de 64 capas (`frontier_dense`), las capas iniciales (0..25) operan con recurrencia lineal (Gated DeltaNet); el motor concentra el timoneo geodésico en el 60% superior de las capas (26..64) y $\kappa=1.20$ equilibra la hiper-esfera $S^{5119}$.
+> - **Desacople de dominios**: En todos los perfiles, el prompt de lenguaje actúa como filtro de refracción óptica con agudización de foco espacial ($\tau_{\text{sharp}} = 4.0$), entregando un atractor perceptual puro $S^*$ sin contaminación sintáctica.
 
 ## Parámetros Físicos (Canónicos desde YAML)
 
 | Parámetro | Valor | Origen | Descripción |
 |-----------|-------|--------|-------------|
-| `nu` | 0.06 - 0.12 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Amortiguamiento viscoso laminar |
-| `gamma` | 0.35 - 0.95 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Intensidad del choque cinético |
-| `kappa` | 1.20 - 2.00 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Balance de energía de nucleación geodésica |
-| `theta_steer` | 1.40 - 2.20 | Geodésica $S^{D-1}$ | Desviación angular total acumulada |
-| `slingshot` | True | Proceso de Penrose / Honda Gravitacional | Eyección elástica de inercia y deflación Gram-Schmidt de $L^*$ |
+| `nu` | 0.06 - 0.08 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Amortiguamiento viscoso laminar |
+| `gamma` | 0.25 - 0.95 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Intensidad del choque cinético |
+| `kappa` | 0.15 - 2.00 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Balance de energía de nucleación geodésica |
+| `theta_steer` | 0.25 - 2.20 | Geodésica $S^{D-1}$ | Desviación angular total acumulada |
+| `slingshot` | True | Proceso de Penrose / Honda Gravitacional | Eyección elástica de inercia y deflación Gram-Schmidt de $S^*$ |
 | `tau_steps` | 32 | `aether_vlm/settling.py` | Pasos de evolución Puerto-Hamiltoniana ($\dot{\mathcal{E}} \le 0$) |
 
 Para inicializar con perfiles automáticos (por defecto):
 ```python
-aether = AetherEngine(model, processor)  # Auto-configura compact_tied o frontier_dense
+aether = AetherEngine(model, processor)  # Auto-configura edge_compact, compact_tied o frontier_dense
 ```
 
 O sobrescribiendo parámetros específicos si se desea:

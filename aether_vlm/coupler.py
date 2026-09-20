@@ -187,7 +187,16 @@ class AetherCollapseHead:
         return z_condensed
 
 AETHER_MODEL_PROFILES = {
-    # Perfil A: Modelos compactos de atención densa con pesos atados (Qwen3.5-0.8B y 2B)
+    # Perfil 1: Modelos Edge (0.8B) -> Capacidad delicada, acoplamiento suave
+    "edge_compact": {
+        "theta_steer": 0.25,
+        "kappa": 0.15,
+        "gamma": 0.25,
+        "nu": 0.08,
+        "active_layers_ratio": 0.50,
+        "slingshot": True,
+    },
+    # Perfil 2: Modelos Compactos de atención densa con pesos atados (Qwen3.5-2B)
     "compact_tied": {
         "theta_steer": 1.40,
         "kappa": 2.00,
@@ -196,7 +205,7 @@ AETHER_MODEL_PROFILES = {
         "active_layers_ratio": 0.50,  # Capas 12..24
         "slingshot": True,
     },
-    # Perfil B: Modelo frontier denso de 64 capas, D=5120 y lm_head dedicado (Qwen3.8-27B)
+    # Perfil 3: Modelo frontier denso de 64 capas, D=5120 y lm_head dedicado (Qwen3.8-27B)
     "frontier_dense": {
         "theta_steer": 2.20,         # Compensación por dispersión en 64 capas
         "kappa": 1.20,               # Ajuste por concentración hiper-esférica en D=5120
@@ -229,6 +238,8 @@ class AetherEngine:
         # Autoselección de perfil según topología de capas y dimensión latente
         if self.num_layers >= 48 or self.hidden_dim >= 4096:
             self.profile_name = "frontier_dense"
+        elif self.hidden_dim <= 1024:
+            self.profile_name = "edge_compact"
         else:
             self.profile_name = "compact_tied"
 
@@ -336,31 +347,35 @@ class AetherEngine:
             self.hooked_head.last_raw_logits = None
             self.hooked_head.last_cond_logits = None
 
-    def prepare_multimodal_thought(self, visual_patches, text_prompt):
-        # 1. Atractor visual fáctico
-        u_vis = mx.mean(visual_patches, axis=0)
-        u_vis = u_vis / mx.sqrt(mx.sum(u_vis * u_vis) + 1e-12)
-
-        # 2. Extracción de intención lingüística real
-        input_ids = self.processor.tokenizer.encode(text_prompt)
+    def prepare_multimodal_thought(self, visual_patches, text_prompt, tau_sharp=4.0):
+        # 1. Extracción de intención lingüística como lente de polarización
+        tok = getattr(self.processor, "tokenizer", self.processor)
+        input_ids = tok.encode(text_prompt)
         input_tensor = mx.array(input_ids)[None, :]
         text_embeds = self.model.language_model.model.embed_tokens(input_tensor)[0]
         u_txt = mx.mean(text_embeds, axis=0)
         u_txt = (u_txt / mx.sqrt(mx.sum(u_txt * u_txt) + 1e-12)).astype(mx.float32)
 
-        # 3. Pensamiento Profundo tau* = 32
-        L_star, telemetria = run_deep_thought_settling(u_vis, u_txt, tau_steps=32)
+        # 2. Refracción óptica y agudización de foco espacial tau_sharp = 4.0
+        vis_norms = mx.sqrt(mx.sum(visual_patches * visual_patches, axis=-1, keepdims=True) + 1e-12)
+        vis_unit = visual_patches / vis_norms
+        cos_sim = mx.sum(vis_unit * u_txt, axis=-1)
+        attn_weights = mx.softmax(tau_sharp * cos_sim, axis=-1)
+        S_focal = mx.sum(visual_patches * attn_weights[:, None], axis=0)
+        u_vis = S_focal / mx.sqrt(mx.sum(S_focal * S_focal) + 1e-12)
 
-        # 4. Potencial Geodésico Intrínseco en S^{D-1} sobre H+
-        # d_g = arccos(<L*, w_i> / ||w_i||), Delta_G = (kappa/2) * d_g^2
-        delta_G = self.hooked_head.recompute_geodesic_delta_G(L_star)
+        # 3. Asentamiento Riemanniano disipativo del atractor perceptual puro S*
+        S_star, telemetria = run_deep_thought_settling(u_vis, u_vis, tau_steps=32)
+
+        # 4. Potencial Geodésico Intrínseco en S^{D-1} sobre H+ alimentado con S*
+        delta_G = self.hooked_head.recompute_geodesic_delta_G(S_star)
 
         self.state["gen_step"] = 0
         self.state["tau_relax"] = self.tau_relax
         self.state["slingshot"] = self.slingshot
         self.state["u_vis"] = u_vis
         self.state["u_txt"] = u_txt
-        self.state["L_star"] = L_star
+        self.state["L_star"] = S_star
         self.state["delta_G"] = delta_G
         self.state["v_drag"] = None
 

@@ -36,12 +36,32 @@ def run_deep_thought_settling(u_vis, u_text, tau_steps=32, dt=0.05, M_coeff=0.25
     L_star = L / mx.sqrt(mx.sum(L * L) + 1e-12)
     return L_star, telemetry
 
-def settle_multimodal_thought(vis, prompt, D, processor):
+def settle_multimodal_thought(vis, prompt, D, processor, embed_layer=None, tau_sharp=4.0):
     """
     Punto de entrada canónico para el asentamiento multimodal de pensamiento continuo.
-    Calcula el atractor semántico fáctico L* en S^{D-1} mediante flujo de gradiente disipativo.
+    Calcula el atractor semántico fáctico S* en S^{D-1} mediante desacople estricto de dominios:
+    el lenguaje actúa como filtro óptico de refracción sobre los parches visuales con
+    agudización de foco espacial (tau_sharp=4.0), produciendo evidencia perceptual pura.
     """
-    u_vis = mx.mean(vis, axis=0)
-    u_vis = u_vis / mx.sqrt(mx.sum(u_vis * u_vis) + 1e-12)
-    L_star, _ = run_deep_thought_settling(u_vis, u_vis, tau_steps=32)
-    return L_star
+    if embed_layer is not None and processor is not None and prompt is not None:
+        tok = getattr(processor, "tokenizer", processor)
+        input_ids = tok.encode(prompt)
+        input_tensor = mx.array(input_ids)[None, :]
+        text_embeds = embed_layer(input_tensor)[0]
+        u_txt = mx.mean(text_embeds, axis=0)
+        u_txt = (u_txt / mx.sqrt(mx.sum(u_txt * u_txt) + 1e-12)).astype(mx.float32)
+
+        # Refracción óptica sobre los parches visuales
+        vis_norms = mx.sqrt(mx.sum(vis * vis, axis=-1, keepdims=True) + 1e-12)
+        vis_unit = vis / vis_norms
+        cos_sim = mx.sum(vis_unit * u_txt, axis=-1)
+        attn_weights = mx.softmax(tau_sharp * cos_sim, axis=-1)
+        S_focal = mx.sum(vis * attn_weights[:, None], axis=0)
+        u_vis = S_focal / mx.sqrt(mx.sum(S_focal * S_focal) + 1e-12)
+    else:
+        u_vis = mx.mean(vis, axis=0)
+        u_vis = u_vis / mx.sqrt(mx.sum(u_vis * u_vis) + 1e-12)
+
+    # Asentamiento Riemanniano disipativo del foco perceptual puro
+    S_star, _ = run_deep_thought_settling(u_vis, u_vis, tau_steps=32)
+    return S_star
