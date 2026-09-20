@@ -73,17 +73,19 @@ class TiedLinearHead:
 
 class AetherCollapseHead:
     """
-    Capa de Colapso: Confinamiento Conforme en H+ y Condensación de Gibbs.
-    Resuelve la anisotropía del vocabulario mediante proyección esférica covariante S^{D-1}.
-    Elimina la singularidad monótona ('el el el...') y previene horizontes de Schwarzschild
-    mediante Radiación de Hawking (descarga entrópica dE/dt < 0 con escala tau_relax).
+    Capa de Colapso con Honda Gravitacional de Penrose y Métrica Geodésica Intrínseca en S^{D-1}.
+    1. Métrica Geodésica: Delta_G = (kappa/2) * arccos^2(cos_theta) en lugar de cuerda plana.
+    2. Honda de Penrose: Reflejo elástico de velocidad de caída e impulso ortogonal sobre W_t.
+    3. Deflación Gram-Schmidt: El atractor L* se despoja de los conceptos ya radiados.
+    Permite operar en resonancia plena (kappa=2.00, theta=1.40) SIN apagar la gravedad.
     """
-    def __init__(self, original_lm_head, nu=0.12, gamma=0.35, kappa=0.15, tau_relax=45.0):
+    def __init__(self, original_lm_head, nu=0.12, gamma=0.35, kappa=0.15, tau_relax=None, slingshot=True):
         self.original_lm_head = original_lm_head
         self.nu = nu
         self.gamma = gamma
         self.kappa = kappa
         self.tau_relax = tau_relax
+        self.slingshot = slingshot
         self.state_ref = None
         self.active = False
         self.call_count = 0
@@ -97,16 +99,26 @@ class AetherCollapseHead:
         self.head_group_size = getattr(original_lm_head, 'group_size', 64)
         self.head_bits = getattr(original_lm_head, 'bits', 4)
 
-        # Precalcular normas euclídeas de las filas de W_head para invarianza covariante en S^{D-1}
-        deq = mx.dequantize(
+        # Precalcular matriz des-cuantizada W_head y normas euclídeas de fila
+        self.deq_W = mx.dequantize(
             self.head_w, self.head_scales, self.head_biases,
             group_size=self.head_group_size, bits=self.head_bits
         )
-        self.row_norms = mx.sqrt(mx.sum(deq * deq, axis=-1) + 1e-12)
+        self.row_norms = mx.sqrt(mx.sum(self.deq_W * self.deq_W, axis=-1) + 1e-12)
+        mx.eval(self.deq_W)
         mx.eval(self.row_norms)
 
     def __getattr__(self, name):
         return getattr(self.original_lm_head, name)
+
+    def recompute_geodesic_delta_G(self, target_vector):
+        """Calcula el potencial geodésico cuadrático Delta_G = (kappa/2) * arccos^2(<h, w>/||w||)."""
+        z_target = self.original_lm_head(target_vector)
+        cos_t = mx.clip(z_target / self.row_norms, -1.0 + 1e-7, 1.0 - 1e-7)
+        d_g = mx.arccos(cos_t)
+        delta_G = 0.5 * self.kappa * mx.square(d_g)
+        mx.eval(delta_G)
+        return delta_G
 
     def __call__(self, h):
         if not self.active or self.state_ref is None:
@@ -115,30 +127,21 @@ class AetherCollapseHead:
         v_drag = self.state_ref.get("v_drag")
         delta_G = self.state_ref.get("delta_G")
 
-        # Si kappa fue modificado dinámicamente en el objeto, recalcular delta_G con la nueva escala
-        if delta_G is not None and getattr(self, "_last_kappa", None) != self.kappa:
-            cos_theta = self.state_ref.get("cos_theta")
-            if cos_theta is not None:
-                delta_G = 0.5 * self.kappa * mx.square(1.0 - cos_theta)
-                self.state_ref["delta_G"] = delta_G
-                self._last_kappa = self.kappa
-
         if delta_G is None:
             return self.original_lm_head(h)
 
         self.call_count += 1
 
-        # Radiación de Hawking: Descarga de entalpía y evaporación del horizonte r_s(t) -> 0
+        # Modulación temporal opcional (si tau_relax está explícitamente fijado y no es inf/None)
         t = self.state_ref.get("gen_step", 0)
         tau = self.state_ref.get("tau_relax", self.tau_relax)
-        decay = math.exp(-t / tau) if (tau is not None and tau > 0) else 1.0
+        decay = math.exp(-t / tau) if (tau is not None and tau > 0 and tau < 1e8) else 1.0
 
         delta_G_eff = delta_G * decay
         nu_eff = self.nu * decay
         gamma_eff = self.gamma * decay
 
-        # Invocación directa al pipeline de condensación covariante en C++ nativo (H+)
-        # Pasa tensores crudos de cuantización y barrera de Gibbs evaporativa
+        # Invocación al pipeline nativo C++ sobre Metal GPU
         z_condensed = aether_native_c.dispatch_full_collapse(
             h,
             v_drag if v_drag is not None else mx.zeros_like(h[0, 0, :]),
@@ -149,18 +152,46 @@ class AetherCollapseHead:
         )
         self.last_cond_logits = z_condensed
 
-        # Incrementar el paso de generación propio para tokens autorregresivos (h.shape[1] == 1)
+        # Dinámica de Honda Gravitacional de Penrose y Deflación de Atractor
         if h.shape[1] == 1:
             self.state_ref["gen_step"] = t + 1
+
+            if self.slingshot:
+                # 1. Token colapsado en el periapsis
+                token_id = int(mx.argmax(z_condensed[0, -1, :]))
+                w_t = self.deq_W[token_id]
+                norm_wt = self.row_norms[token_id]
+                w_t_unit = w_t / (norm_wt + 1e-12)
+
+                # 2. Deflación Gram-Schmidt de la dimensión semántica ya emitida
+                L_curr = self.state_ref.get("L_star")
+                if L_curr is not None:
+                    proj_L = mx.sum(L_curr * w_t_unit)
+                    L_next = L_curr - (proj_L * 0.95) * w_t_unit
+                    norm_L = mx.sqrt(mx.sum(L_next * L_next) + 1e-12)
+                    L_next = L_next / norm_L
+                    self.state_ref["L_star"] = L_next
+
+                    # 3. Honda de Penrose: Reflejo elástico de velocidad de caída
+                    if v_drag is not None:
+                        v_rad = mx.sum(v_drag * w_t_unit) * w_t_unit
+                        v_perp = v_drag - v_rad
+                        # v_slingshot: Inversión elástica (-1.5*v_rad) e impulso transversal hacia el nuevo atractor
+                        v_slingshot = v_perp - 1.5 * v_rad + (self.gamma * 0.1) * L_next
+                        self.state_ref["v_drag"] = v_slingshot
+
+                    # 4. Actualización del potencial geodésico d_g cada 2 tokens (cero overhead)
+                    if self.call_count % 2 == 0:
+                        self.state_ref["delta_G"] = self.recompute_geodesic_delta_G(L_next)
 
         return z_condensed
 
 class AetherEngine:
     """
-    Orquestador soberano en silicio con proyección covariante en H+
-    y radiación de Hawking del horizonte de Schwarzschild.
+    Orquestador soberano en silicio con Honda Gravitacional de Penrose,
+    proyección covariante geodésica arccos y deflación ortogonal de información.
     """
-    def __init__(self, model, processor, nu=0.12, gamma=0.35, kappa=0.15, theta_steer=0.35, tau_relax=45.0):
+    def __init__(self, model, processor, nu=0.12, gamma=0.35, kappa=0.15, theta_steer=0.35, tau_relax=None, slingshot=True):
         self.model = model
         self.processor = processor
         self.nu = nu
@@ -168,10 +199,11 @@ class AetherEngine:
         self.kappa = kappa
         self.theta_steer = theta_steer
         self.tau_relax = tau_relax
+        self.slingshot = slingshot
         self.num_layers = len(self.model.language_model.model.layers)
         self.hooked_layers = []
         self.hooked_head = None
-        self.state = {"gen_step": 0, "tau_relax": tau_relax}
+        self.state = {"gen_step": 0, "tau_relax": tau_relax, "slingshot": slingshot}
         self._install_circuit()
 
     def _install_circuit(self):
@@ -183,8 +215,6 @@ class AetherEngine:
                 orig, layer_idx=l, num_layers=self.num_layers,
                 theta_steer=self.theta_steer, tau_relax=self.tau_relax
             )
-            # Modulación de capas: capas tempranas (0..half-1) theta=0 (preserva sintaxis local)
-            # Capas tardías (half..num_layers-1): rampa progresiva de síntesis semántica
             if l < half:
                 hook.theta_step = 0.0
             else:
@@ -194,7 +224,6 @@ class AetherEngine:
             self.model.language_model.model.layers[l] = hook
             self.hooked_layers.append(hook)
 
-        # Detección y adaptación de lm_head (soporta modelos con lm_head y tied-embeddings como Qwen3.5 0.8B/2B)
         if hasattr(self.model.language_model, "lm_head") and self.model.language_model.lm_head is not None:
             orig_head = self.model.language_model.lm_head
         else:
@@ -203,13 +232,17 @@ class AetherEngine:
                 self.model.language_model.args.tie_word_embeddings = False
 
         self.hooked_head = AetherCollapseHead(
-            orig_head, nu=self.nu, gamma=self.gamma, kappa=self.kappa, tau_relax=self.tau_relax
+            orig_head, nu=self.nu, gamma=self.gamma, kappa=self.kappa, tau_relax=self.tau_relax, slingshot=self.slingshot
         )
         self.hooked_head.state_ref = self.state
         self.model.language_model.lm_head = self.hooked_head
 
-    def update_parameters(self, theta_steer=None, gamma=None, kappa=None, nu=None, tau_relax=None):
-        """Actualiza parámetros dinámicamente recalculando la barrera de Gibbs, modulación geodésica y relajación."""
+    def update_parameters(self, theta_steer=None, gamma=None, kappa=None, nu=None, tau_relax=None, slingshot=None):
+        """Actualiza parámetros dinámicamente recalculando la barrera de Gibbs geodésica."""
+        if slingshot is not None:
+            self.slingshot = slingshot
+            self.hooked_head.slingshot = slingshot
+            self.state["slingshot"] = slingshot
         if tau_relax is not None:
             self.tau_relax = tau_relax
             self.state["tau_relax"] = tau_relax
@@ -234,10 +267,8 @@ class AetherEngine:
         if kappa is not None:
             self.kappa = kappa
             self.hooked_head.kappa = kappa
-            if "z_L_star" in self.state and self.hooked_head.row_norms is not None:
-                cos_theta = self.state["z_L_star"] / self.hooked_head.row_norms
-                self.state["delta_G"] = 0.5 * self.kappa * mx.square(1.0 - cos_theta)
-                mx.eval(self.state["delta_G"])
+            if "L_star" in self.state and self.hooked_head.row_norms is not None:
+                self.state["delta_G"] = self.hooked_head.recompute_geodesic_delta_G(self.state["L_star"])
 
     def set_active(self, active: bool):
         for hook in self.hooked_layers:
@@ -269,23 +300,16 @@ class AetherEngine:
         # 3. Pensamiento Profundo tau* = 32
         L_star, telemetria = run_deep_thought_settling(u_vis, u_txt, tau_steps=32)
 
-        # 4. Proyección conforme covariante en S^{D-1} sobre H+
-        # Invarianza de norma radial: cos(theta_i) = <w_i, L*> / ||w_i||
-        z_L_star = self.hooked_head.original_lm_head(L_star)
-        cos_theta = z_L_star / self.hooked_head.row_norms
-        
-        # Barrera de Gibbs confinada al cono positivo R+: Delta_G = (kappa/2) * (1 - cos(theta))^2
-        delta_G = 0.5 * self.kappa * mx.square(1.0 - cos_theta)
-        mx.eval(z_L_star)
-        mx.eval(delta_G)
+        # 4. Potencial Geodésico Intrínseco en S^{D-1} sobre H+
+        # d_g = arccos(<L*, w_i> / ||w_i||), Delta_G = (kappa/2) * d_g^2
+        delta_G = self.hooked_head.recompute_geodesic_delta_G(L_star)
 
         self.state["gen_step"] = 0
         self.state["tau_relax"] = self.tau_relax
+        self.state["slingshot"] = self.slingshot
         self.state["u_vis"] = u_vis
         self.state["u_txt"] = u_txt
         self.state["L_star"] = L_star
-        self.state["z_L_star"] = z_L_star
-        self.state["cos_theta"] = cos_theta
         self.state["delta_G"] = delta_G
         self.state["v_drag"] = None
 
