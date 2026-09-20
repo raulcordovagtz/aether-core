@@ -143,18 +143,36 @@ print()
 
 ---
 
+## Perfiles de Configuración Automática (`AETHER_MODEL_PROFILES`)
+
+`AetherEngine` selecciona automáticamente el perfil físico óptimo según la topología detectada:
+
+| Perfil | Modelos | Capas $N$ | Dim $D$ | $\theta_{\text{steer}}$ | $\kappa$ | $\nu$ | $\gamma$ | Capas Activas |
+|--------|---------|-----------|---------|-------------------------|----------|-------|-------|---------------|
+| `compact_tied` | Qwen3.5-0.8B, 2B | 24 | 1024-2048 | 1.40 | 2.00 | 0.08 | 0.95 | 50% (capas 12..24) |
+| `frontier_dense` | Qwen3.8-27B | 64 | 5120 | 2.20 | 1.20 | 0.06 | 0.85 | 60% (capas 26..64) |
+
+> [!NOTE]
+> - En modelos de 64 capas (`frontier_dense`), las capas iniciales (0..25) operan con recurrencia lineal (Gated DeltaNet); el motor concentra el timoneo geodésico en el 60% superior de las capas (26..64).
+> - $\kappa$ se calibra automáticamente a 1.20 en $D=5120$ para compensar la concentración de medida en hiper-esferas $S^{5119}$.
+
 ## Parámetros Físicos (Canónicos desde YAML)
 
 | Parámetro | Valor | Origen | Descripción |
 |-----------|-------|--------|-------------|
-| `nu` | 0.12 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Amortiguamiento viscoso laminar |
-| `gamma` | 0.35 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Intensidad del choque cinético |
-| `kappa` | 0.15 - 2.00 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Balance de energía de nucleación (constante) |
-| `theta_steer` | 0.35 - 1.40 | Geodésica $S^{D-1}$ | Desviación angular total acumulada (constante) |
-| `slingshot` | True | Proceso de Penrose / Honda Gravitacional | Eyección elástica de inercia tras el colapso sobre $w_t$ |
-| `tau_steps` | 32 | `aether_vlm/settling.py` | Pasos de evolución Puerto-Hamiltoniana |
+| `nu` | 0.06 - 0.12 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Amortiguamiento viscoso laminar |
+| `gamma` | 0.35 - 0.95 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Intensidad del choque cinético |
+| `kappa` | 1.20 - 2.00 | `spec/collapse/C021_vapor_condensation_collapse.yaml` | Balance de energía de nucleación geodésica |
+| `theta_steer` | 1.40 - 2.20 | Geodésica $S^{D-1}$ | Desviación angular total acumulada |
+| `slingshot` | True | Proceso de Penrose / Honda Gravitacional | Eyección elástica de inercia y deflación Gram-Schmidt de $L^*$ |
+| `tau_steps` | 32 | `aether_vlm/settling.py` | Pasos de evolución Puerto-Hamiltoniana ($\dot{\mathcal{E}} \le 0$) |
 
-Para ajustar parámetros al instanciar (o dinámicamente vía `aether.update_parameters(...)`):
+Para inicializar con perfiles automáticos (por defecto):
+```python
+aether = AetherEngine(model, processor)  # Auto-configura compact_tied o frontier_dense
+```
+
+O sobrescribiendo parámetros específicos si se desea:
 ```python
 aether = AetherEngine(
     model, processor,
@@ -162,7 +180,7 @@ aether = AetherEngine(
     gamma=0.95,
     kappa=2.00,        # Gravedad en resonancia plena (infinita/constante)
     theta_steer=1.40,  # Máxima autoridad geodésica
-    slingshot=True     # Honda de Penrose: evita ciclos límite sin apagar la gravedad
+    slingshot=True     # Honda de Penrose + Deflación Gram-Schmidt
 )
 ```
 

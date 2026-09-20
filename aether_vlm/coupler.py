@@ -186,40 +186,90 @@ class AetherCollapseHead:
 
         return z_condensed
 
+AETHER_MODEL_PROFILES = {
+    # Perfil A: Modelos compactos de atención densa con pesos atados (Qwen3.5-0.8B y 2B)
+    "compact_tied": {
+        "theta_steer": 1.40,
+        "kappa": 2.00,
+        "gamma": 0.95,
+        "nu": 0.08,
+        "active_layers_ratio": 0.50,  # Capas 12..24
+        "slingshot": True,
+    },
+    # Perfil B: Modelo frontier denso de 64 capas, D=5120 y lm_head dedicado (Qwen3.8-27B)
+    "frontier_dense": {
+        "theta_steer": 2.20,         # Compensación por dispersión en 64 capas
+        "kappa": 1.20,               # Ajuste por concentración hiper-esférica en D=5120
+        "gamma": 0.85,
+        "nu": 0.06,
+        "active_layers_ratio": 0.60, # Capas 26..64 (respeta capas lineales recurrentes tempranas)
+        "slingshot": True,
+    }
+}
+
 class AetherEngine:
     """
     Orquestador soberano en silicio con Honda Gravitacional de Penrose,
-    proyección covariante geodésica arccos y deflación ortogonal de información.
+    proyección covariante geodésica arccos y autoconfiguración por perfil arquitectónico.
     """
-    def __init__(self, model, processor, nu=0.12, gamma=0.35, kappa=0.15, theta_steer=0.35, tau_relax=None, slingshot=True):
+    def __init__(self, model, processor, nu=None, gamma=None, kappa=None, theta_steer=None, tau_relax=None, slingshot=None):
         self.model = model
         self.processor = processor
-        self.nu = nu
-        self.gamma = gamma
-        self.kappa = kappa
-        self.theta_steer = theta_steer
-        self.tau_relax = tau_relax
-        self.slingshot = slingshot
         self.num_layers = len(self.model.language_model.model.layers)
+        
+        # Detección de dimensión latente D (desempaquetando 4-bit uint32 si aplica)
+        if hasattr(self.model.language_model.model, "embed_tokens"):
+            w = getattr(self.model.language_model.model.embed_tokens, "weight", None)
+            bits = getattr(self.model.language_model.model.embed_tokens, "bits", 4)
+            pack_factor = (32 // bits) if (w is not None and w.dtype == mx.uint32) else 1
+            self.hidden_dim = (w.shape[-1] * pack_factor) if w is not None else 2048
+        else:
+            self.hidden_dim = 2048
+
+        # Autoselección de perfil según topología de capas y dimensión latente
+        if self.num_layers >= 48 or self.hidden_dim >= 4096:
+            self.profile_name = "frontier_dense"
+        else:
+            self.profile_name = "compact_tied"
+
+        profile = AETHER_MODEL_PROFILES[self.profile_name]
+
+        # Asignar parámetros con override explícito si fue provisto
+        self.nu = nu if nu is not None else profile["nu"]
+        self.gamma = gamma if gamma is not None else profile["gamma"]
+        self.kappa = kappa if kappa is not None else profile["kappa"]
+        self.theta_steer = theta_steer if theta_steer is not None else profile["theta_steer"]
+        self.slingshot = slingshot if slingshot is not None else profile["slingshot"]
+        self.active_layers_ratio = profile.get("active_layers_ratio", 0.50)
+        self.tau_relax = tau_relax
+
         self.hooked_layers = []
         self.hooked_head = None
-        self.state = {"gen_step": 0, "tau_relax": tau_relax, "slingshot": slingshot}
+        self.state = {
+            "gen_step": 0,
+            "tau_relax": tau_relax,
+            "slingshot": self.slingshot,
+            "profile": self.profile_name
+        }
         self._install_circuit()
 
     def _install_circuit(self):
         self.hooked_layers = []
-        half = self.num_layers // 2
+        # Inicio de capas activas según perfil
+        start_active = int(self.num_layers * (1.0 - self.active_layers_ratio))
+        num_active = max(1, self.num_layers - start_active)
+
         for l in range(self.num_layers):
             orig = self.model.language_model.model.layers[l]
             hook = AetherCoupledLayer(
                 orig, layer_idx=l, num_layers=self.num_layers,
                 theta_steer=self.theta_steer, tau_relax=self.tau_relax
             )
-            if l < half:
+            if l < start_active:
                 hook.theta_step = 0.0
             else:
-                progress = (l - half + 1) / float(self.num_layers - half)
-                hook.theta_step = (self.theta_steer / float(self.num_layers - half)) * progress
+                progress = (l - start_active + 1) / float(num_active)
+                hook.theta_step = (self.theta_steer / float(num_active)) * progress
             hook.state_ref = self.state
             self.model.language_model.model.layers[l] = hook
             self.hooked_layers.append(hook)
@@ -251,13 +301,14 @@ class AetherEngine:
                 hook.tau_relax = tau_relax
         if theta_steer is not None:
             self.theta_steer = theta_steer
-            half = self.num_layers // 2
+            start_active = int(self.num_layers * (1.0 - self.active_layers_ratio))
+            num_active = max(1, self.num_layers - start_active)
             for l, hook in enumerate(self.hooked_layers):
-                if l < half:
+                if l < start_active:
                     hook.theta_step = 0.0
                 else:
-                    progress = (l - half + 1) / float(self.num_layers - half)
-                    hook.theta_step = (self.theta_steer / float(self.num_layers - half)) * progress
+                    progress = (l - start_active + 1) / float(num_active)
+                    hook.theta_step = (self.theta_steer / float(num_active)) * progress
         if gamma is not None:
             self.gamma = gamma
             self.hooked_head.gamma = gamma
