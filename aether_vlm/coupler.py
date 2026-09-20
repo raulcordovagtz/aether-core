@@ -46,6 +46,22 @@ class AetherCoupledLayer:
                 self.state_ref["v_drag"] = (h_last - h[0, -1, :]) / self.dt
             return mx.concatenate([h[:, :-1, :], h_last[None, None, :]], axis=1)
 
+class TiedLinearHead:
+    """
+    Envoltura para modelos con pesos de proyección atados al embedding (tie_word_embeddings=True)
+    como Qwen3.5 0.8B y 2B. Permite acceder a los tensores de cuantización y actuar como lm_head.
+    """
+    def __init__(self, embed_tokens):
+        self.embed_tokens = embed_tokens
+        self.weight = embed_tokens.weight
+        self.scales = embed_tokens.scales
+        self.biases = getattr(embed_tokens, "biases", None)
+        self.group_size = getattr(embed_tokens, "group_size", 64)
+        self.bits = getattr(embed_tokens, "bits", 4)
+
+    def __call__(self, h):
+        return self.embed_tokens.as_linear(h)
+
 class AetherCollapseHead:
     """
     Capa de Colapso: Ejecuta el Choque Cinético (gamma), la Proyección (W_head)
@@ -66,7 +82,7 @@ class AetherCollapseHead:
         # Extraer buffers de cuantización UNA SOLA VEZ (cero overhead por token)
         self.head_w = original_lm_head.weight
         self.head_scales = original_lm_head.scales
-        self.head_biases = original_lm_head.biases
+        self.head_biases = getattr(original_lm_head, 'biases', None)
         self.head_group_size = getattr(original_lm_head, 'group_size', 64)
         self.head_bits = getattr(original_lm_head, 'bits', 4)
 
@@ -121,7 +137,14 @@ class AetherEngine:
             self.model.language_model.model.layers[l] = hook
             self.hooked_layers.append(hook)
 
-        orig_head = self.model.language_model.lm_head
+        # Detección y adaptación de lm_head (soporta modelos con lm_head y tied-embeddings como Qwen3.5 0.8B/2B)
+        if hasattr(self.model.language_model, "lm_head") and self.model.language_model.lm_head is not None:
+            orig_head = self.model.language_model.lm_head
+        else:
+            orig_head = TiedLinearHead(self.model.language_model.model.embed_tokens)
+            if hasattr(self.model.language_model, "args") and hasattr(self.model.language_model.args, "tie_word_embeddings"):
+                self.model.language_model.args.tie_word_embeddings = False
+
         self.hooked_head = AetherCollapseHead(orig_head, nu=self.nu, gamma=self.gamma, kappa=self.kappa)
         self.hooked_head.state_ref = self.state
         self.model.language_model.lm_head = self.hooked_head
