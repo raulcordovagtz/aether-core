@@ -213,30 +213,62 @@ AETHER_MODEL_PROFILES = {
         "nu": 0.06,
         "active_layers_ratio": 0.60, # Capas 26..64 (respeta capas lineales recurrentes tempranas)
         "slingshot": True,
+    },
+    # Perfil 4: Modelos Frontier MoE (Qwen3.6-35B-A3B) -> 40 capas, D=2048, 256 expertos (8 activos)
+    "moe_sparse": {
+        "theta_steer": 1.60,         # Rotación suave para estabilidad en el enrutamiento dinámico de expertos
+        "kappa": 1.50,               # Masa gravitatoria calibrada para 35B MoE en D=2048
+        "gamma": 0.75,               # Choque cinético acotado para enrutamiento no-oscilatorio
+        "nu": 0.06,                  # Disipación viscosa laminar
+        "active_layers_ratio": 0.55, # Capas 18..40 (respeta DeltaNet recurrente en capas 0..17)
+        "slingshot": True,
     }
 }
 
 class AetherEngine:
     """
     Orquestador soberano en silicio con Honda Gravitacional de Penrose,
-    proyección covariante geodésica arccos y autoconfiguración por perfil arquitectónico.
+    proyección covariante geodésica arccos y autoconfiguración por perfil arquitectónico (Dense y MoE).
     """
     def __init__(self, model, processor, nu=None, gamma=None, kappa=None, theta_steer=None, tau_relax=None, slingshot=None):
         self.model = model
         self.processor = processor
         self.num_layers = len(self.model.language_model.model.layers)
         
-        # Detección de dimensión latente D (desempaquetando 4-bit uint32 si aplica)
-        if hasattr(self.model.language_model.model, "embed_tokens"):
+        # Detección de arquitectura MoE (Mixture of Experts)
+        self.is_moe = False
+        self.num_experts = 0
+        self.num_experts_per_tok = 0
+        if hasattr(self.model, "config"):
+            cfg = self.model.config
+            text_cfg = getattr(cfg, "text_config", cfg)
+            model_type = getattr(cfg, "model_type", "")
+            self.num_experts = getattr(text_cfg, "num_experts", getattr(cfg, "num_experts", 0)) or 0
+            self.num_experts_per_tok = getattr(text_cfg, "num_experts_per_tok", getattr(cfg, "num_experts_per_tok", 0)) or 0
+            if "moe" in model_type.lower() or self.num_experts > 1:
+                self.is_moe = True
+
+        # Detección de dimensión latente D
+        if hasattr(self.model, "config"):
+            cfg = self.model.config
+            text_cfg = getattr(cfg, "text_config", cfg)
+            if hasattr(text_cfg, "hidden_size"):
+                self.hidden_dim = text_cfg.hidden_size
+            elif hasattr(cfg, "hidden_size"):
+                self.hidden_dim = cfg.hidden_size
+            else:
+                self.hidden_dim = 2048
+        elif hasattr(self.model.language_model.model, "embed_tokens"):
             w = getattr(self.model.language_model.model.embed_tokens, "weight", None)
             bits = getattr(self.model.language_model.model.embed_tokens, "bits", 4)
-            pack_factor = (32 // bits) if (w is not None and w.dtype == mx.uint32) else 1
-            self.hidden_dim = (w.shape[-1] * pack_factor) if w is not None else 2048
+            self.hidden_dim = ((w.shape[-1] * 32) // bits) if w is not None else 2048
         else:
             self.hidden_dim = 2048
 
-        # Autoselección de perfil según topología de capas y dimensión latente
-        if self.num_layers >= 48 or self.hidden_dim >= 4096:
+        # Autoselección de perfil según arquitectura (MoE vs Dense) y topología
+        if self.is_moe:
+            self.profile_name = "moe_sparse"
+        elif self.num_layers >= 48 or self.hidden_dim >= 4096:
             self.profile_name = "frontier_dense"
         elif self.hidden_dim <= 1024:
             self.profile_name = "edge_compact"
@@ -376,6 +408,46 @@ class AetherEngine:
         self.state["u_vis"] = u_vis
         self.state["u_txt"] = u_txt
         self.state["L_star"] = S_star
+        self.state["delta_G"] = delta_G
+        self.state["v_drag"] = None
+
+        self.set_active(True)
+        return telemetria
+
+    def prepare_thought(self, text_prompt, tau_steps=32):
+        """
+        Prepara el atractor cognitivo continuo para razonamiento puro de texto (sin visión).
+        Realiza el asentamiento geodésico del biespinor entre las premisas iniciales y la consulta operativa.
+        """
+        tok = getattr(self.processor, "tokenizer", self.processor)
+        input_ids = tok.encode(text_prompt)
+        input_tensor = mx.array(input_ids)[None, :]
+        text_embeds = self.model.language_model.model.embed_tokens(input_tensor)[0]
+        T = text_embeds.shape[0]
+
+        if T >= 4:
+            half = T // 2
+            u_premise = mx.mean(text_embeds[:half], axis=0)
+            u_query = mx.mean(text_embeds[half:], axis=0)
+        else:
+            u_premise = mx.mean(text_embeds, axis=0)
+            u_query = u_premise
+
+        u_premise = (u_premise / mx.sqrt(mx.sum(u_premise * u_premise) + 1e-12)).astype(mx.float32)
+        u_query = (u_query / mx.sqrt(mx.sum(u_query * u_query) + 1e-12)).astype(mx.float32)
+
+        # Asentamiento Riemanniano disipativo del biespinor de razonamiento
+        L_star, telemetria = run_deep_thought_settling(u_premise, u_query, tau_steps=tau_steps)
+
+        # Potencial Geodésico Intrínseco en S^{D-1} sobre H+ alimentado con L*
+        delta_G = self.hooked_head.recompute_geodesic_delta_G(L_star)
+
+        self.state["gen_step"] = 0
+        self.state["tau_relax"] = self.tau_relax
+        self.state["slingshot"] = self.slingshot
+        self.state["u_vis"] = u_premise
+        self.state["u_txt"] = u_query
+        self.state["L_star"] = L_star
         self.state["delta_G"] = delta_G
         self.state["v_drag"] = None
 
