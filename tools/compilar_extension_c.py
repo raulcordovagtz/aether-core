@@ -1,7 +1,35 @@
 import os, sys, subprocess, sysconfig
 import mlx.core
 
-# 1. Headers y bibliotecas oficiales de MLX (distribuidos dentro del propio paquete instalado)
+print("═" * 78)
+print(" 🔨 COMPILACIÓN DEL MOTOR NATIVO AETHER (C++20 & METAL GPU)")
+print("═" * 78)
+
+# 0. Compilación del shader Metal a .metallib
+metal_src = "metal/geodesic_trajectory_cell.metal"
+metallib_out = "metal/geodesic_trajectory_cell.metallib"
+air_tmp = "metal/geodesic_trajectory_cell.air"
+
+if os.path.exists(metal_src):
+    print(f"• Compilando shader Metal: {metal_src} -> {metallib_out}...")
+    res_m1 = subprocess.run([
+        "xcrun", "-sdk", "macosx", "metal", "-c", metal_src, "-o", air_tmp
+    ])
+    if res_m1.returncode != 0:
+        print("❌ Error compilando shader Metal a bitcode AIR.")
+        sys.exit(1)
+
+    res_m2 = subprocess.run([
+        "xcrun", "-sdk", "macosx", "metallib", air_tmp, "-o", metallib_out
+    ])
+    if os.path.exists(air_tmp):
+        os.remove(air_tmp)
+    if res_m2.returncode != 0:
+        print("❌ Error enlazando metallib.")
+        sys.exit(1)
+    print(f"✓ Shader Metal compilado con éxito: {metallib_out}")
+
+# 1. Headers y bibliotecas oficiales de MLX
 mlx_dir = os.path.dirname(mlx.core.__file__)
 mlx_inc = os.path.join(mlx_dir, "include")
 mlx_lib = os.path.join(mlx_dir, "lib")
@@ -13,7 +41,6 @@ print("• Biblioteca MLX:", mlx_dylib)
 assert os.path.exists(mlx_dylib), f"No se encontró libmlx.dylib en {mlx_lib}"
 
 # 2. Nanobind v2.15.0 compatible con la versión de MLX (ABI v21 con dominio 'mlx')
-# MLX 0.32.2 utiliza nanobind v2.15.0 con NB_DOMAIN=mlx para el type-caster de arrays.
 nb_dir = os.path.abspath("tools/nanobind_mlx")
 if not os.path.exists(nb_dir):
     print("• Descargando nanobind v2.15.0 (versión exacta de MLX v0.32.2)...")
@@ -26,7 +53,6 @@ nb_inc = os.path.join(nb_dir, "include")
 nb_src = os.path.join(nb_dir, "src", "nb_combined.cpp")
 nb_robin = os.path.join(nb_dir, "ext", "robin_map", "include")
 
-# Si robin_map no está en el submódulo local, buscar en nanobind de conda
 if not os.path.exists(os.path.join(nb_robin, "tsl", "robin_map.h")):
     try:
         import nanobind as nb_pkg
@@ -40,9 +66,10 @@ py_inc = sysconfig.get_path("include")
 ext_suffix = sysconfig.get_config_var("EXT_SUFFIX") or ".so"
 out_file = f"aether_vlm/aether_native_c{ext_suffix}"
 
-# 3. Invocación de compilación con clang++
+# 3. Invocación de compilación con clang++ (Objective-C++ para soporte nativo de Metal)
 cmd = [
     "clang++", "-O3", "-Wall", "-shared", "-std=c++20", "-fPIC",
+    "-ObjC++",
     "-Wno-c++20-extensions",
     "-Wno-unused-const-variable",
     "-DNB_DOMAIN=mlx",
@@ -50,7 +77,10 @@ cmd = [
     f"-I{nb_inc}",
     f"-I{nb_robin}",
     f"-I{mlx_inc}",
+    "-Iinclude",
     f"-L{mlx_lib}", "-lmlx",
+    "-framework", "Metal",
+    "-framework", "Foundation",
     f"-Wl,-rpath,{mlx_lib}",
     "-undefined", "dynamic_lookup",
     nb_src,
@@ -58,18 +88,18 @@ cmd = [
     "-o", out_file
 ]
 
-print("• Compilando con clang++...")
+print("• Compilando extensión C++/Metal con clang++...")
 res = subprocess.run(cmd)
 
 if res.returncode == 0:
-    print(f"✓ Compilación C++ exitosa: {out_file}")
+    print(f"✓ Compilación C++/Metal exitosa: {out_file}")
     
     print("\n• Probando enlace nativo e invocación en Python...")
     sys.path.insert(0, os.path.abspath("aether_vlm"))
     import aether_native_c
     import mlx.core as mx
 
-    # Validación funcional con tensores de prueba
+    # Validación funcional de kernels previos
     h = mx.array([1.0, 2.0, 3.0])
     u = mx.array([0.0, 1.0, 0.0])
     out_step = aether_native_c.dispatch_riemannian_step(h, u, 0.5)
@@ -82,7 +112,22 @@ if res.returncode == 0:
     mx.eval(out_cond)
     print("✓ dispatch_vapor_condensation:", out_cond)
 
-    print("\n🚀 ¡Módulo aether_native_c compilado, enlazado y ejecutado al 100% con éxito!")
+    # Validación funcional Hito 1.1: Célula Proyectiva Geodésica (C++/MLX y Metal GPU)
+    D = 1024
+    h_in = mx.zeros((D,)) + (1.0 / (D ** 0.5))
+    v_drag = mx.zeros((D,))
+    a_flow = mx.zeros((D,))
+    u_att = mx.zeros((D,)) + (1.0 / (D ** 0.5))
+
+    out_cell_cpp = aether_native_c.dispatch_geodesic_trajectory_cell(h_in, v_drag, a_flow, u_att)
+    mx.eval(out_cell_cpp["h_star"], out_cell_cpp["h_deflated"])
+    print("✓ dispatch_geodesic_trajectory_cell (C++/MLX): norm(h*) =", float(mx.sqrt(mx.sum(out_cell_cpp["h_star"]**2))))
+
+    out_cell_metal = aether_native_c.dispatch_geodesic_trajectory_cell_metal(h_in, v_drag, a_flow, u_att)
+    mx.eval(out_cell_metal["h_star"], out_cell_metal["h_deflated"])
+    print("✓ dispatch_geodesic_trajectory_cell_metal (Metal GPU): norm(h*) =", float(mx.sqrt(mx.sum(out_cell_metal["h_star"]**2))))
+
+    print("\n🚀 ¡Módulo aether_native_c (C++ y Metal GPU) compilado, enlazado y ejecutado al 100% con éxito!")
 else:
     print("❌ Fallo en la compilación.")
     sys.exit(1)

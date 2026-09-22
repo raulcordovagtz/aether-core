@@ -1,13 +1,19 @@
 // ═════════════════════════════════════════════════════════════════════════════
-// 🌌 AETHER-VLM NATIVE ENGINE :: END-TO-END C++ PIPELINE
-// Generado automáticamente por tools/transpilar_aether_native_aot.py
+// 🌌 AETHER-VLM NATIVE ENGINE :: END-TO-END C++ / METAL PIPELINE
 // SSOT: spec/collapse/C021_vapor_condensation_collapse.yaml
+// HITO 1.1: Célula Proyectiva Geodésica Autónoma (C++/MLX y Metal GPU)
 // ═════════════════════════════════════════════════════════════════════════════
 #include <mlx/mlx.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/vector.h>
 #include <cmath>
 #include <optional>
+#include <iostream>
+
+#import <Metal/Metal.h>
+#import <Foundation/Foundation.h>
+
+#include "../include/geodesic_trajectory_cell.h"
 
 namespace nb = nanobind;
 using namespace mlx::core;
@@ -93,6 +99,215 @@ array collapse_and_condense_cpp(
     return vapor_condensation_cpp(z_impact, delta_G, nu);
 }
 
+// ─── 4. KERNEL C++/MLX: CÉLULA PROYECTIVA GEODÉSICA AUTÓNOMA (HITO 1.1) ───────
+nb::dict dispatch_geodesic_trajectory_cell_cpp(
+    const array& h_in,
+    const array& v_drag,
+    const array& a_flow,
+    const array& u_attractor,
+    float tau = 1.0f,
+    float kappa_att = 1.20f,
+    float beta_perm = 12.0f,
+    float theta_perm = 0.50f,
+    uint32_t mode = 0
+) {
+    constexpr float EPS = 1e-12f;
+
+    auto sq_h = sum(h_in * h_in, -1, true);
+    auto inv_norm_h = rsqrt(sq_h + EPS);
+    auto h_unit = h_in * inv_norm_h;
+
+    auto sq_v = sum(v_drag * v_drag, -1, true);
+    auto sq_a = sum(a_flow * a_flow, -1, true);
+    auto dot_hv = sum(h_unit * v_drag, -1, true);
+    auto dot_va = sum(v_drag * a_flow, -1, true);
+    auto dot_hu = sum(h_unit * u_attractor, -1, true);
+
+    auto v_perp = v_drag - dot_hv * h_unit;
+    auto sq_v_perp = sum(v_perp * v_perp, -1, true);
+    auto norm_v_perp = sqrt(sq_v_perp + EPS);
+    auto v_hat = v_perp / norm_v_perp;
+
+    auto bivector_sq = maximum(array(0.0f), (sq_v * sq_a) - (dot_va * dot_va));
+    auto kappa_kin = sqrt(bivector_sq) / (power(sq_v, array(1.5f)) + EPS);
+
+    auto omega = norm_v_perp * inv_norm_h;
+    auto theta = omega * tau;
+    auto cos_t = cos(theta);
+    auto sin_t = sin(theta);
+
+    auto a_attractor = kappa_att * (u_attractor - dot_hu * h_unit);
+    auto h_projected = (cos_t * h_unit) + (sin_t * v_hat) + (0.5f * tau * tau * a_attractor);
+    auto norm_proj = sqrt(sum(h_projected * h_projected, -1, true) + EPS);
+    auto h_star = h_projected / norm_proj;
+
+    auto r_val = sum(h_star * u_attractor, -1, true);
+    auto dot_h_hstar = sum(h_unit * h_star, -1, true);
+    auto h_deflated = h_unit - dot_h_hstar * h_star;
+
+    auto q_tension = sq_v_perp / (sq_h + EPS);
+    auto g_perm = 1.0f / (1.0f + exp(-beta_perm * (q_tension - theta_perm)));
+
+    nb::dict result;
+    result["h_star"]               = h_star;
+    result["h_deflated"]           = h_deflated;
+    result["correlation_r"]        = r_val;
+    result["curvature_kappa"]      = kappa_kin;
+    result["kinetic_energy"]       = 0.5f * sq_v_perp;
+    result["angular_displacement"] = theta;
+    result["dirichlet_tension"]    = q_tension;
+    result["permeability_gate"]    = g_perm;
+    result["mode"]                 = array(static_cast<int>(mode));
+    return result;
+}
+
+// ─── 5. KERNEL METAL GPU: CÉLULA PROYECTIVA GEODÉSICA AUTÓNOMA (HITO 1.1) ─────
+struct CellMetricsGPU {
+    float correlation_r;
+    float curvature_kappa;
+    float kinetic_energy;
+    float angular_displacement;
+    float dirichlet_tension;
+    float permeability_gate;
+    uint32_t regime;
+    uint32_t active_mode;
+};
+
+static id<MTLDevice> g_metal_device = nil;
+static id<MTLCommandQueue> g_metal_queue = nil;
+static id<MTLComputePipelineState> g_metal_pso = nil;
+
+static id<MTLBuffer> g_buf_h = nil;
+static id<MTLBuffer> g_buf_v = nil;
+static id<MTLBuffer> g_buf_a = nil;
+static id<MTLBuffer> g_buf_u = nil;
+static id<MTLBuffer> g_buf_h_proj = nil;
+static id<MTLBuffer> g_buf_h_defl = nil;
+static id<MTLBuffer> g_buf_metrics = nil;
+static size_t g_buf_capacity = 0;
+
+static void init_metal_trajectory_cell() {
+    if (g_metal_pso != nil) return;
+    @autoreleasepool {
+        g_metal_device = MTLCreateSystemDefaultDevice();
+        if (!g_metal_device) {
+            throw std::runtime_error("Metal GPU no disponible en este sistema");
+        }
+        g_metal_queue = [g_metal_device newCommandQueue];
+
+        NSError* err = nil;
+        NSString* path = @"metal/geodesic_trajectory_cell.metallib";
+        if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            path = @"/Users/crotalo/aether_engine/metal/geodesic_trajectory_cell.metallib";
+        }
+        NSURL* libURL = [NSURL fileURLWithPath:path];
+        id<MTLLibrary> lib = [g_metal_device newLibraryWithURL:libURL error:&err];
+        if (!lib) {
+            throw std::runtime_error("No se pudo cargar geodesic_trajectory_cell.metallib: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+        id<MTLFunction> fn = [lib newFunctionWithName:@"dispatch_geodesic_trajectory_cell_step"];
+        if (!fn) {
+            throw std::runtime_error("Función dispatch_geodesic_trajectory_cell_step no encontrada en metallib");
+        }
+        g_metal_pso = [g_metal_device newComputePipelineStateWithFunction:fn error:&err];
+        if (!g_metal_pso) {
+            throw std::runtime_error("Error creando pipeline state Metal: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+    }
+}
+
+static void ensure_metal_buffers(size_t required_bytes) {
+    if (g_buf_h != nil && g_buf_capacity >= required_bytes) return;
+    size_t cap = std::max(required_bytes, static_cast<size_t>(8192 * sizeof(float)));
+    g_buf_h      = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_v      = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_a      = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_u      = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_h_proj = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_h_defl = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    if (!g_buf_metrics) {
+        g_buf_metrics = [g_metal_device newBufferWithLength:sizeof(CellMetricsGPU) options:MTLResourceStorageModeShared];
+    }
+    g_buf_capacity = cap;
+}
+
+nb::dict dispatch_geodesic_trajectory_cell_metal(
+    const array& h_in,
+    const array& v_drag,
+    const array& a_flow,
+    const array& u_attractor,
+    float tau = 1.0f,
+    float kappa_att = 1.20f,
+    float beta_perm = 12.0f,
+    float theta_perm = 0.50f,
+    uint32_t mode = 0
+) {
+    init_metal_trajectory_cell();
+
+    eval({h_in, v_drag, a_flow, u_attractor});
+
+    uint32_t D = static_cast<uint32_t>(h_in.size());
+    size_t bytes_vec = D * sizeof(float);
+    ensure_metal_buffers(bytes_vec);
+
+    @autoreleasepool {
+        std::memcpy([g_buf_h contents], h_in.data<float>(), bytes_vec);
+        std::memcpy([g_buf_v contents], v_drag.data<float>(), bytes_vec);
+        std::memcpy([g_buf_a contents], a_flow.data<float>(), bytes_vec);
+        std::memcpy([g_buf_u contents], u_attractor.data<float>(), bytes_vec);
+
+        id<MTLCommandBuffer> cmd = [g_metal_queue commandBufferWithUnretainedReferences];
+        id<MTLComputeCommandEncoder> enc = [cmd computeCommandEncoder];
+
+        [enc setComputePipelineState:g_metal_pso];
+        [enc setBuffer:g_buf_h offset:0 atIndex:0];
+        [enc setBuffer:g_buf_v offset:0 atIndex:1];
+        [enc setBuffer:g_buf_a offset:0 atIndex:2];
+        [enc setBuffer:g_buf_u offset:0 atIndex:3];
+        [enc setBuffer:g_buf_h_proj offset:0 atIndex:4];
+        [enc setBuffer:g_buf_h_defl offset:0 atIndex:5];
+        [enc setBuffer:g_buf_metrics offset:0 atIndex:6];
+
+        [enc setBytes:&tau length:sizeof(float) atIndex:7];
+        [enc setBytes:&kappa_att length:sizeof(float) atIndex:8];
+        [enc setBytes:&beta_perm length:sizeof(float) atIndex:9];
+        [enc setBytes:&theta_perm length:sizeof(float) atIndex:10];
+        [enc setBytes:&mode length:sizeof(uint32_t) atIndex:11];
+        [enc setBytes:&D length:sizeof(uint32_t) atIndex:12];
+
+        // Memoria compartida threadgroup: 256 hilos * 6 floats = 6144 bytes
+        [enc setThreadgroupMemoryLength:256 * 6 * sizeof(float) atIndex:0];
+
+        [enc dispatchThreadgroups:MTLSizeMake(1, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+        [enc endEncoding];
+
+        [cmd commit];
+        [cmd waitUntilCompleted];
+
+        float* p_proj = (float*)[g_buf_h_proj contents];
+        float* p_defl = (float*)[g_buf_h_defl contents];
+        CellMetricsGPU* p_m = (CellMetricsGPU*)[g_buf_metrics contents];
+
+        array h_star(p_proj, {static_cast<int>(D)}, float32);
+        array h_deflated(p_defl, {static_cast<int>(D)}, float32);
+
+        nb::dict result;
+        result["h_star"]               = h_star;
+        result["h_deflated"]           = h_deflated;
+        result["correlation_r"]        = array(p_m->correlation_r);
+        result["curvature_kappa"]      = array(p_m->curvature_kappa);
+        result["kinetic_energy"]       = array(p_m->kinetic_energy);
+        result["angular_displacement"] = array(p_m->angular_displacement);
+        result["dirichlet_tension"]    = array(p_m->dirichlet_tension);
+        result["permeability_gate"]    = array(p_m->permeability_gate);
+        result["regime"]               = array(static_cast<int>(p_m->regime));
+        result["mode"]                 = array(static_cast<int>(p_m->active_mode));
+        return result;
+    }
+}
+
 // ─── ENLACE DEL MÓDULO NANOBIND ──────────────────────────────────────────────
 NB_MODULE(aether_native_c, m) {
     m.def("dispatch_riemannian_step", &riemannian_step_cpp, "Exp-Map Riemanniano en C++ nativo",
@@ -104,4 +319,19 @@ NB_MODULE(aether_native_c, m) {
           nb::arg("head_w"), nb::arg("head_scales"), nb::arg("head_biases"),
           nb::arg("group_size") = 64, nb::arg("bits") = 4,
           nb::arg("nu") = CANONICAL_NU_VISCOSITY, nb::arg("gamma") = CANONICAL_GAMMA_SHOCK);
+
+    // Hito 1.1: Célula Proyectiva Geodésica Autónoma
+    m.def("dispatch_geodesic_trajectory_cell", &dispatch_geodesic_trajectory_cell_cpp,
+          "Célula Proyectiva Geodésica Autónoma (Backend C++/MLX) — Hito 1.1",
+          nb::arg("h_in"), nb::arg("v_drag"), nb::arg("a_flow"), nb::arg("u_attractor"),
+          nb::arg("tau") = 1.0f, nb::arg("kappa_att") = 1.20f,
+          nb::arg("beta_perm") = 12.0f, nb::arg("theta_perm") = 0.50f,
+          nb::arg("mode") = 0);
+
+    m.def("dispatch_geodesic_trajectory_cell_metal", &dispatch_geodesic_trajectory_cell_metal,
+          "Célula Proyectiva Geodésica Autónoma (Backend Metal GPU Puro) — Hito 1.1",
+          nb::arg("h_in"), nb::arg("v_drag"), nb::arg("a_flow"), nb::arg("u_attractor"),
+          nb::arg("tau") = 1.0f, nb::arg("kappa_att") = 1.20f,
+          nb::arg("beta_perm") = 12.0f, nb::arg("theta_perm") = 0.50f,
+          nb::arg("mode") = 0);
 }
