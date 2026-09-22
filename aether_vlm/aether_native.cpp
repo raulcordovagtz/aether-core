@@ -14,6 +14,8 @@
 #import <Foundation/Foundation.h>
 
 #include "../include/geodesic_trajectory_cell.h"
+#include "../include/intracycle_state_buffer.h"
+#include "../include/permeability_gate.h"
 
 namespace nb = nanobind;
 using namespace mlx::core;
@@ -308,6 +310,49 @@ nb::dict dispatch_geodesic_trajectory_cell_metal(
     }
 }
 
+// ─── 5. PUENTE C++: BÚFER CINEMÁTICO INTRACICLO (CERO ALOCACIONES) ───────────
+static std::unique_ptr<aether::IntracycleStateBuffer> g_state_buffer = nullptr;
+static aether::PermeabilityGate g_permeability_gate(12.0f, 0.50f, aether::GateInterventionMode::PassiveObserve);
+
+nb::dict buffer_push_state_cpp(const array& h_t, uint32_t step) {
+    uint32_t D = h_t.shape(-1);
+    if (!g_state_buffer || g_state_buffer->dimension() != D) {
+        g_state_buffer = std::make_unique<aether::IntracycleStateBuffer>(D);
+    }
+
+    // Ingestión directa de puntero contiguo UMA (CERO copia / CERO vector dinámico)
+    aether::KinematicState k = g_state_buffer->push_state_zero_copy(h_t.data<float>(), step);
+    aether::GateState g = g_permeability_gate.evaluate(k.dirichlet_tension_q);
+
+    array v_arr = array(g_state_buffer->current_v(), {static_cast<int>(D)}, float32);
+    array a_arr = array(g_state_buffer->current_a(), {static_cast<int>(D)}, float32);
+
+    nb::dict d;
+    d["norm_h"]               = k.norm_h;
+    d["sq_v"]                 = k.sq_v;
+    d["sq_a"]                 = k.sq_a;
+    d["dot_hv"]               = k.dot_hv;
+    d["dot_va"]               = k.dot_va;
+    d["dirichlet_tension_q"]  = k.dirichlet_tension_q;
+    d["permeability_g"]       = g.permeability_g;
+    d["gate_is_open"]         = g.is_open;
+    d["v_t"]                  = v_arr;
+    d["a_t"]                  = a_arr;
+    d["count"]                = g_state_buffer->count();
+    return d;
+}
+
+void buffer_reset_cpp() {
+    if (g_state_buffer) g_state_buffer->reset();
+}
+
+void gate_set_mode_cpp(uint32_t mode) {
+    g_permeability_gate.set_mode(
+        (mode == 0) ? aether::GateInterventionMode::PassiveObserve 
+                    : aether::GateInterventionMode::ActiveCoupled
+    );
+}
+
 // ─── ENLACE DEL MÓDULO NANOBIND ──────────────────────────────────────────────
 NB_MODULE(aether_native_c, m) {
     m.def("dispatch_riemannian_step", &riemannian_step_cpp, "Exp-Map Riemanniano en C++ nativo",
@@ -334,4 +379,12 @@ NB_MODULE(aether_native_c, m) {
           nb::arg("tau") = 1.0f, nb::arg("kappa_att") = 1.20f,
           nb::arg("beta_perm") = 12.0f, nb::arg("theta_perm") = 0.50f,
           nb::arg("mode") = 0);
+
+    // Hito 1.2: Búfer Intraciclo Cinemático y Compuerta Dual
+    m.def("buffer_push_state", &buffer_push_state_cpp, "Registra h_t y calcula cinematica en C++ sin alocaciones",
+          nb::arg("h_t"), nb::arg("step"));
+    m.def("buffer_reset", &buffer_reset_cpp, "Reinicia el buffer intraciclo");
+    m.def("gate_set_mode", &gate_set_mode_cpp, "Configura modo de la compuerta: 0=Pasivo, 1=Activo",
+          nb::arg("mode"));
 }
+
