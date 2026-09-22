@@ -27,6 +27,40 @@ class AetherCoupledLayer:
 
     def __call__(self, x, **kwargs):
         h = self.original_layer(x, **kwargs)
+
+        # 1. Si estamos en prefill y recolectando perfiles cinemáticos para detección de cresta
+        if self.state_ref is not None and "prefill_layer_states" in self.state_ref:
+            if h.shape[1] > 1:
+                h_last_pre = h[0, -1, :].astype(mx.float32)
+                mx.eval(h_last_pre)
+                norm_pre = mx.sqrt(mx.sum(h_last_pre * h_last_pre)) + 1e-12
+                self.state_ref["prefill_layer_states"].append(h_last_pre / norm_pre)
+
+        # 2. Enrutamiento asociativo en la cresta de la Fact Band durante decode
+        peak_l = self.state_ref.get("peak_layer") if self.state_ref is not None else None
+        if self.active and peak_l is not None and self.layer_idx == peak_l and h.shape[1] == 1:
+            try:
+                if aether_native_c.hilbert_memory_slot_count() > 0:
+                    h_token = h[0, 0, :].astype(mx.float32)
+                    mx.eval(h_token)
+                    norm_h = mx.sqrt(mx.sum(h_token * h_token)) + 1e-12
+                    h_unit = h_token / norm_h
+                    dec = aether_native_c.fact_band_route_layer(h_unit, threshold=0.45, beta=16.0)
+                    if dec.get("is_active", False):
+                        slot_dict = aether_native_c.hilbert_memory_get_slot(dec["selected_slot"])
+                        if slot_dict.get("valid", False):
+                            u_fact = slot_dict["tensor"]
+                            t = self.state_ref.get("gen_step", 0)
+                            res = aether_native_c.dispatch_conformal_coupling(
+                                h_unit, u_fact, step=t, tau_eff=0.15, kappa_att=0.80,
+                                beta_gate=12.0, theta_gate=0.35, mode=1
+                            )
+                            h_steered = (res["h_steered"] * (norm_h - 1e-12)).astype(h.dtype)
+                            h = h_steered[None, None, :]
+                            self.state_ref["last_fact_decision"] = dec
+            except Exception:
+                pass
+
         if not self.active or self.state_ref is None:
             return h
 
@@ -292,7 +326,8 @@ class AetherEngine:
             "gen_step": 0,
             "tau_relax": tau_relax,
             "slingshot": self.slingshot,
-            "profile": self.profile_name
+            "profile": self.profile_name,
+            "peak_layer": None
         }
         self._install_circuit()
 
@@ -411,6 +446,21 @@ class AetherEngine:
         self.state["delta_G"] = delta_G
         self.state["v_drag"] = None
 
+        # 5. Detección cinemática de la cresta de la Fact Band en prefill
+        if "peak_layer" not in self.state or self.state["peak_layer"] is None:
+            self.state["prefill_layer_states"] = []
+            try:
+                _ = self.model.language_model(input_tensor)
+                if len(self.state["prefill_layer_states"]) == self.num_layers:
+                    peak_info = aether_native_c.fact_band_detect_peak(self.state["prefill_layer_states"])
+                    self.state["peak_layer"] = peak_info["peak_layer"]
+                else:
+                    self.state["peak_layer"] = int(self.num_layers * 0.70)
+            except Exception:
+                self.state["peak_layer"] = int(self.num_layers * 0.70)
+            finally:
+                self.state.pop("prefill_layer_states", None)
+
         self.set_active(True)
         return telemetria
 
@@ -450,6 +500,21 @@ class AetherEngine:
         self.state["L_star"] = L_star
         self.state["delta_G"] = delta_G
         self.state["v_drag"] = None
+
+        # Detección cinemática de la cresta de la Fact Band en prefill
+        if "peak_layer" not in self.state or self.state["peak_layer"] is None:
+            self.state["prefill_layer_states"] = []
+            try:
+                _ = self.model.language_model(input_tensor)
+                if len(self.state["prefill_layer_states"]) == self.num_layers:
+                    peak_info = aether_native_c.fact_band_detect_peak(self.state["prefill_layer_states"])
+                    self.state["peak_layer"] = peak_info["peak_layer"]
+                else:
+                    self.state["peak_layer"] = int(self.num_layers * 0.70)
+            except Exception:
+                self.state["peak_layer"] = int(self.num_layers * 0.70)
+            finally:
+                self.state.pop("prefill_layer_states", None)
 
         self.set_active(True)
         return telemetria
