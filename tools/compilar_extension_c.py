@@ -5,29 +5,32 @@ print("═" * 78)
 print(" 🔨 COMPILACIÓN DEL MOTOR NATIVO AETHER (C++20 & METAL GPU)")
 print("═" * 78)
 
-# 0. Compilación del shader Metal a .metallib
-metal_src = "metal/geodesic_trajectory_cell.metal"
-metallib_out = "metal/geodesic_trajectory_cell.metallib"
-air_tmp = "metal/geodesic_trajectory_cell.air"
+# 0. Compilación de shaders Metal a .metallib
+metal_shaders = [
+    ("metal/geodesic_trajectory_cell.metal", "metal/geodesic_trajectory_cell.metallib", "metal/geodesic_trajectory_cell.air"),
+    ("metal/hilbert_memory_cell.metal", "metal/hilbert_memory_cell.metallib", "metal/hilbert_memory_cell.air"),
+    ("metal/fact_band_router.metal", "metal/fact_band_router.metallib", "metal/fact_band_router.air")
+]
 
-if os.path.exists(metal_src):
-    print(f"• Compilando shader Metal: {metal_src} -> {metallib_out}...")
-    res_m1 = subprocess.run([
-        "xcrun", "-sdk", "macosx", "metal", "-c", metal_src, "-o", air_tmp
-    ])
-    if res_m1.returncode != 0:
-        print("❌ Error compilando shader Metal a bitcode AIR.")
-        sys.exit(1)
+for src, out, air in metal_shaders:
+    if os.path.exists(src):
+        print(f"• Compilando shader Metal: {src} -> {out}...")
+        res_m1 = subprocess.run([
+            "xcrun", "-sdk", "macosx", "metal", "-c", src, "-o", air
+        ])
+        if res_m1.returncode != 0:
+            print(f"❌ Error compilando shader Metal {src} a bitcode AIR.")
+            sys.exit(1)
 
-    res_m2 = subprocess.run([
-        "xcrun", "-sdk", "macosx", "metallib", air_tmp, "-o", metallib_out
-    ])
-    if os.path.exists(air_tmp):
-        os.remove(air_tmp)
-    if res_m2.returncode != 0:
-        print("❌ Error enlazando metallib.")
-        sys.exit(1)
-    print(f"✓ Shader Metal compilado con éxito: {metallib_out}")
+        res_m2 = subprocess.run([
+            "xcrun", "-sdk", "macosx", "metallib", air, "-o", out
+        ])
+        if os.path.exists(air):
+            os.remove(air)
+        if res_m2.returncode != 0:
+            print(f"❌ Error enlazando {out}.")
+            sys.exit(1)
+        print(f"✓ Shader Metal compilado con éxito: {out}")
 
 # 1. Headers y bibliotecas oficiales de MLX
 mlx_dir = os.path.dirname(mlx.core.__file__)

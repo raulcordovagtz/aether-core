@@ -39,6 +39,11 @@ public:
     void set_mode(GateInterventionMode mode) { mode_ = mode; }
     GateInterventionMode get_mode() const { return mode_; }
 
+    void set_parameters(float beta, float theta) {
+        beta_ = beta;
+        theta_ = theta;
+    }
+
     void apply_boundary_filter(float* h_out, const float* h_in, const float* h_star, float g, uint32_t D) const {
         if (mode_ == GateInterventionMode::PassiveObserve) {
             std::memcpy(h_out, h_in, D * sizeof(float));

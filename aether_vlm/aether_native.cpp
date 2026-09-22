@@ -16,6 +16,9 @@
 #include "../include/geodesic_trajectory_cell.h"
 #include "../include/intracycle_state_buffer.h"
 #include "../include/permeability_gate.h"
+#include "../include/conformal_coupling_junction.h"
+#include "../include/hilbert_memory_cell.h"
+#include "../include/fact_band_router.h"
 
 namespace nb = nanobind;
 using namespace mlx::core;
@@ -353,6 +356,435 @@ void gate_set_mode_cpp(uint32_t mode) {
     );
 }
 
+// ─── 6. PUENTE C++: UNIÓN CONFORMAL UMA DIRECT-POINTER (HITO 1.3-R1) ─────────
+static std::unique_ptr<aether::ConformalCouplingJunction> g_junction = nullptr;
+
+// Forward: Célula de Memoria Geométrica (necesario para Gap Junction en coupling)
+static std::unique_ptr<aether::HilbertMemoryCell> g_hilbert_memory = nullptr;
+
+nb::dict dispatch_conformal_coupling_cpp(
+    const array& h_state,
+    const array& u_attractor,
+    uint32_t step,
+    float tau_eff = 0.15f,
+    float kappa_att = 0.80f,
+    float beta_gate = 12.0f,
+    float theta_gate = 0.35f,
+    uint32_t mode = 1,
+    float force_g = -1.0f
+) {
+    eval({h_state, u_attractor});
+    uint32_t D = h_state.shape(-1);
+    if (!g_junction) {
+        g_junction = std::make_unique<aether::ConformalCouplingJunction>(D);
+    }
+    g_junction->set_mode(
+        (mode == 0) ? aether::GateInterventionMode::PassiveObserve 
+                    : aether::GateInterventionMode::ActiveCoupled
+    );
+    g_junction->set_hyperparameters(tau_eff, kappa_att, beta_gate, theta_gate);
+
+    // Ingestión Directa por Puntero UMA (CERO vector intermedio / CERO copia previa)
+    aether::CouplingMetrics m = g_junction->couple_step(
+        h_state.data<float>(), u_attractor.data<float>(), step, force_g
+    );
+
+    // ─── GAP JUNCTION: Auto-ingesta del subproducto en Célula 2 ─────────────
+    // Cuando el acoplamiento está activo (cell_evaluated), el subproducto ortogonal
+    // se deposita automáticamente en el anillo de memoria de HilbertMemoryCell
+    // sin retorno a Python y sin frenar el macro-reloj de inferencia.
+    bool memory_ingested = false;
+    uint32_t memory_slot = 0;
+    uint32_t memory_count = 0;
+    if (m.cell_evaluated) {
+        if (!g_hilbert_memory || g_hilbert_memory->dimension() != D) {
+            g_hilbert_memory = std::make_unique<aether::HilbertMemoryCell>(D, 32);
+        }
+        memory_slot = g_hilbert_memory->ingest_residual_subproduct(
+            g_junction->get_orthogonal_subproduct(), D, step, m.dirichlet_tension_q
+        );
+        memory_count = g_hilbert_memory->count();
+        memory_ingested = true;
+    }
+
+    // Salida sin copias intermedias
+    array h_steered = array(g_junction->get_steered_output(), {static_cast<int>(D)}, float32);
+    array h_proj    = array(g_junction->get_projected_state(), {static_cast<int>(D)}, float32);
+    array h_ortho   = array(g_junction->get_orthogonal_subproduct(), {static_cast<int>(D)}, float32);
+
+    nb::dict d;
+    d["h_steered"]             = h_steered;
+    d["h_projected"]           = h_proj;
+    d["h_orthogonal"]          = h_ortho;
+    d["correlation_r"]         = m.correlation_r;
+    d["curvature_kappa"]       = m.curvature_kappa;
+    d["dirichlet_tension_q"]   = m.dirichlet_tension_q;
+    d["permeability_g"]        = m.permeability_g;
+    d["angular_displacement"]  = m.angular_displacement;
+    d["gate_open"]             = m.gate_open;
+    d["cell_evaluated"]        = m.cell_evaluated;
+    d["intervention_applied"]  = m.intervention_applied;
+    d["active_regime"]         = m.active_regime;
+    d["memory_ingested"]       = memory_ingested;
+    d["memory_slot"]           = memory_slot;
+    d["memory_count"]          = memory_count;
+    return d;
+}
+
+void junction_reset_cpp() {
+    if (g_junction) g_junction->reset();
+}
+
+// ─── 7. PUENTE C++ & METAL: CÉLULA DE MEMORIA GEOMÉTRICA (HITO 2.1) ───────────
+// (g_hilbert_memory declarado antes de dispatch_conformal_coupling_cpp para Gap Junction)
+
+// Metal pipeline states y buffers para HilbertMemoryCell
+static id<MTLComputePipelineState> g_metal_pso_pack = nil;
+static id<MTLComputePipelineState> g_metal_pso_deflate = nil;
+static id<MTLComputePipelineState> g_metal_pso_style = nil;
+static id<MTLBuffer> g_buf_mem_mA = nil;
+static id<MTLBuffer> g_buf_mem_mB = nil;
+static id<MTLBuffer> g_buf_mem_out = nil;
+static id<MTLBuffer> g_buf_mem_degen = nil;
+static size_t g_buf_mem_capacity = 0;
+
+static void init_metal_hilbert_memory() {
+    if (g_metal_pso_pack != nil) return;
+    @autoreleasepool {
+        if (!g_metal_device) {
+            g_metal_device = MTLCreateSystemDefaultDevice();
+        }
+        if (!g_metal_queue) {
+            g_metal_queue = [g_metal_device newCommandQueue];
+        }
+
+        NSError* err = nil;
+        NSString* path = @"metal/hilbert_memory_cell.metallib";
+        if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            path = @"/Users/crotalo/aether_engine/metal/hilbert_memory_cell.metallib";
+        }
+        NSURL* libURL = [NSURL fileURLWithPath:path];
+        id<MTLLibrary> lib = [g_metal_device newLibraryWithURL:libURL error:&err];
+        if (!lib) {
+            throw std::runtime_error("No se pudo cargar hilbert_memory_cell.metallib: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+
+        id<MTLFunction> fn_pack = [lib newFunctionWithName:@"dispatch_hilbert_pack_two"];
+        id<MTLFunction> fn_defl = [lib newFunctionWithName:@"dispatch_hilbert_deflation"];
+        id<MTLFunction> fn_style = [lib newFunctionWithName:@"dispatch_hilbert_style_transport"];
+
+        if (!fn_pack || !fn_defl || !fn_style) {
+            throw std::runtime_error("Funciones Metal no encontradas en hilbert_memory_cell.metallib");
+        }
+
+        g_metal_pso_pack = [g_metal_device newComputePipelineStateWithFunction:fn_pack error:&err];
+        g_metal_pso_deflate = [g_metal_device newComputePipelineStateWithFunction:fn_defl error:&err];
+        g_metal_pso_style = [g_metal_device newComputePipelineStateWithFunction:fn_style error:&err];
+    }
+}
+
+static void ensure_metal_memory_buffers(size_t required_bytes) {
+    if (g_buf_mem_mA != nil && g_buf_mem_capacity >= required_bytes) return;
+    size_t cap = std::max(required_bytes, static_cast<size_t>(8192 * sizeof(float)));
+    g_buf_mem_mA    = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_mem_mB    = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_mem_out   = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    if (!g_buf_mem_degen) {
+        g_buf_mem_degen = [g_metal_device newBufferWithLength:sizeof(uint32_t) options:MTLResourceStorageModeShared];
+    }
+    g_buf_mem_capacity = cap;
+}
+
+nb::dict hilbert_memory_ingest_cpp(const array& h_subprod, uint32_t timestamp, float energy) {
+    eval({h_subprod});
+    uint32_t D = h_subprod.shape(-1);
+    if (!g_hilbert_memory || g_hilbert_memory->dimension() != D) {
+        g_hilbert_memory = std::make_unique<aether::HilbertMemoryCell>(D, 32);
+    }
+    uint32_t slot = g_hilbert_memory->ingest_residual_subproduct(
+        h_subprod.data<float>(), D, timestamp, energy
+    );
+    nb::dict d;
+    d["slot_idx"] = slot;
+    d["count"]    = g_hilbert_memory->count();
+    d["dimension"]= D;
+    return d;
+}
+
+static std::vector<float> g_mem_temp_out;
+
+nb::dict hilbert_memory_pack_two_cpp(const array& m_A, const array& m_B) {
+    eval({m_A, m_B});
+    uint32_t D = m_A.shape(-1);
+    if (!g_hilbert_memory || g_hilbert_memory->dimension() != D) {
+        g_hilbert_memory = std::make_unique<aether::HilbertMemoryCell>(D, 32);
+    }
+    if (g_mem_temp_out.size() < D) g_mem_temp_out.resize(D);
+
+    const float* facts[2] = { m_A.data<float>(), m_B.data<float>() };
+    aether::DegeneracyReason reason = aether::DegeneracyReason::NONE;
+    bool ok = g_hilbert_memory->execute_superposition_packing(g_mem_temp_out.data(), facts, 2, reason);
+
+    array m_out = array(g_mem_temp_out.data(), {static_cast<int>(D)}, float32);
+    nb::dict d;
+    d["result"]            = m_out;
+    d["degenerate"]        = !ok;
+    d["degeneracy_reason"] = static_cast<uint32_t>(reason);
+    return d;
+}
+
+nb::dict hilbert_memory_deflate_cpp(const array& m_pack, const array& m_target) {
+    eval({m_pack, m_target});
+    uint32_t D = m_pack.shape(-1);
+    if (!g_hilbert_memory || g_hilbert_memory->dimension() != D) {
+        g_hilbert_memory = std::make_unique<aether::HilbertMemoryCell>(D, 32);
+    }
+    if (g_mem_temp_out.size() < D) g_mem_temp_out.resize(D);
+
+    aether::DegeneracyReason reason = aether::DegeneracyReason::NONE;
+    bool ok = g_hilbert_memory->execute_orthogonal_deflation(g_mem_temp_out.data(), m_pack.data<float>(), m_target.data<float>(), reason);
+
+    array m_out = array(g_mem_temp_out.data(), {static_cast<int>(D)}, float32);
+    nb::dict d;
+    d["result"]            = m_out;
+    d["degenerate"]        = !ok;
+    d["degeneracy_reason"] = static_cast<uint32_t>(reason);
+    return d;
+}
+
+nb::dict hilbert_memory_style_transport_cpp(const array& h_truth, const array& u_style, float theta_s) {
+    eval({h_truth, u_style});
+    uint32_t D = h_truth.shape(-1);
+    if (!g_hilbert_memory || g_hilbert_memory->dimension() != D) {
+        g_hilbert_memory = std::make_unique<aether::HilbertMemoryCell>(D, 32);
+    }
+    if (g_mem_temp_out.size() < D) g_mem_temp_out.resize(D);
+
+    aether::DegeneracyReason reason = aether::DegeneracyReason::NONE;
+    bool ok = g_hilbert_memory->execute_style_transport(g_mem_temp_out.data(), h_truth.data<float>(), u_style.data<float>(), theta_s, reason);
+
+    array m_out = array(g_mem_temp_out.data(), {static_cast<int>(D)}, float32);
+    nb::dict d;
+    d["result"]            = m_out;
+    d["degenerate"]        = !ok;
+    d["degeneracy_reason"] = static_cast<uint32_t>(reason);
+    return d;
+}
+
+
+// Implementación Metal GPU pura para paridad
+nb::dict hilbert_memory_pack_two_metal(const array& m_A, const array& m_B) {
+    init_metal_hilbert_memory();
+    eval({m_A, m_B});
+    uint32_t D = static_cast<uint32_t>(m_A.size());
+    size_t bytes = D * sizeof(float);
+    ensure_metal_memory_buffers(bytes);
+
+    @autoreleasepool {
+        std::memcpy([g_buf_mem_mA contents], m_A.data<float>(), bytes);
+        std::memcpy([g_buf_mem_mB contents], m_B.data<float>(), bytes);
+
+        id<MTLCommandBuffer> cmd = [g_metal_queue commandBufferWithUnretainedReferences];
+        id<MTLComputeCommandEncoder> enc = [cmd computeCommandEncoder];
+        [enc setComputePipelineState:g_metal_pso_pack];
+        [enc setBuffer:g_buf_mem_mA offset:0 atIndex:0];
+        [enc setBuffer:g_buf_mem_mB offset:0 atIndex:1];
+        [enc setBuffer:g_buf_mem_out offset:0 atIndex:2];
+        [enc setBuffer:g_buf_mem_degen offset:0 atIndex:3];
+        [enc setBytes:&D length:sizeof(uint32_t) atIndex:4];
+
+        NSUInteger tg_size = std::min(static_cast<uint32_t>(256), D);
+        [enc setThreadgroupMemoryLength:tg_size * sizeof(float) atIndex:0];
+        [enc dispatchThreads:MTLSizeMake(tg_size, 1, 1) threadsPerThreadgroup:MTLSizeMake(tg_size, 1, 1)];
+        [enc endEncoding];
+        [cmd commit];
+        [cmd waitUntilCompleted];
+
+        uint32_t degen = *(uint32_t*)[g_buf_mem_degen contents];
+        array m_out = array((float*)[g_buf_mem_out contents], {static_cast<int>(D)}, float32);
+
+        nb::dict d;
+        d["result"]            = m_out;
+        d["degenerate"]        = (degen != 0);
+        d["degeneracy_reason"] = degen;
+        return d;
+    }
+}
+
+nb::dict hilbert_memory_deflate_metal(const array& m_pack, const array& m_target) {
+    init_metal_hilbert_memory();
+    eval({m_pack, m_target});
+    uint32_t D = static_cast<uint32_t>(m_pack.size());
+    size_t bytes = D * sizeof(float);
+    ensure_metal_memory_buffers(bytes);
+
+    @autoreleasepool {
+        std::memcpy([g_buf_mem_mA contents], m_pack.data<float>(), bytes);
+        std::memcpy([g_buf_mem_mB contents], m_target.data<float>(), bytes);
+
+        id<MTLCommandBuffer> cmd = [g_metal_queue commandBufferWithUnretainedReferences];
+        id<MTLComputeCommandEncoder> enc = [cmd computeCommandEncoder];
+        [enc setComputePipelineState:g_metal_pso_deflate];
+        [enc setBuffer:g_buf_mem_mA offset:0 atIndex:0];
+        [enc setBuffer:g_buf_mem_mB offset:0 atIndex:1];
+        [enc setBuffer:g_buf_mem_out offset:0 atIndex:2];
+        [enc setBuffer:g_buf_mem_degen offset:0 atIndex:3];
+        [enc setBytes:&D length:sizeof(uint32_t) atIndex:4];
+
+        NSUInteger tg_size = std::min(static_cast<uint32_t>(256), D);
+        [enc setThreadgroupMemoryLength:tg_size * sizeof(float) atIndex:0];
+        [enc dispatchThreads:MTLSizeMake(tg_size, 1, 1) threadsPerThreadgroup:MTLSizeMake(tg_size, 1, 1)];
+        [enc endEncoding];
+        [cmd commit];
+        [cmd waitUntilCompleted];
+
+        uint32_t degen = *(uint32_t*)[g_buf_mem_degen contents];
+        array m_out = array((float*)[g_buf_mem_out contents], {static_cast<int>(D)}, float32);
+
+        nb::dict d;
+        d["result"]            = m_out;
+        d["degenerate"]        = (degen != 0);
+        d["degeneracy_reason"] = degen;
+        return d;
+    }
+}
+
+nb::dict hilbert_memory_style_transport_metal(const array& h_truth, const array& u_style, float theta_s) {
+    init_metal_hilbert_memory();
+    eval({h_truth, u_style});
+    uint32_t D = static_cast<uint32_t>(h_truth.size());
+    size_t bytes = D * sizeof(float);
+    ensure_metal_memory_buffers(bytes);
+
+    @autoreleasepool {
+        std::memcpy([g_buf_mem_mA contents], h_truth.data<float>(), bytes);
+        std::memcpy([g_buf_mem_mB contents], u_style.data<float>(), bytes);
+
+        id<MTLCommandBuffer> cmd = [g_metal_queue commandBufferWithUnretainedReferences];
+        id<MTLComputeCommandEncoder> enc = [cmd computeCommandEncoder];
+        [enc setComputePipelineState:g_metal_pso_style];
+        [enc setBuffer:g_buf_mem_mA offset:0 atIndex:0];
+        [enc setBuffer:g_buf_mem_mB offset:0 atIndex:1];
+        [enc setBuffer:g_buf_mem_out offset:0 atIndex:2];
+        [enc setBuffer:g_buf_mem_degen offset:0 atIndex:3];
+        [enc setBytes:&theta_s length:sizeof(float) atIndex:4];
+        [enc setBytes:&D length:sizeof(uint32_t) atIndex:5];
+
+        NSUInteger tg_size = std::min(static_cast<uint32_t>(256), D);
+        [enc setThreadgroupMemoryLength:tg_size * sizeof(float) atIndex:0];
+        [enc dispatchThreads:MTLSizeMake(tg_size, 1, 1) threadsPerThreadgroup:MTLSizeMake(tg_size, 1, 1)];
+        [enc endEncoding];
+        [cmd commit];
+        [cmd waitUntilCompleted];
+
+        uint32_t degen = *(uint32_t*)[g_buf_mem_degen contents];
+        array m_out = array((float*)[g_buf_mem_out contents], {static_cast<int>(D)}, float32);
+
+        nb::dict d;
+        d["result"]            = m_out;
+        d["degenerate"]        = (degen != 0);
+        d["degeneracy_reason"] = degen;
+        return d;
+    }
+}
+
+void hilbert_memory_reset_cpp() {
+    if (g_hilbert_memory) g_hilbert_memory->reset();
+}
+
+// ─── 8. CONSULTAS DE MEMORIA INTER-CELULAR ──────────────────────────────────
+uint32_t hilbert_memory_slot_count_cpp() {
+    return g_hilbert_memory ? g_hilbert_memory->count() : 0;
+}
+
+nb::dict hilbert_memory_get_slot_cpp(uint32_t slot_idx) {
+    nb::dict d;
+    if (!g_hilbert_memory || slot_idx >= g_hilbert_memory->count()) {
+        d["valid"] = false;
+        return d;
+    }
+    uint32_t D = g_hilbert_memory->dimension();
+    const float* ptr = g_hilbert_memory->get_slot_ptr(slot_idx);
+    array slot_tensor = array(ptr, {static_cast<int>(D)}, float32);
+    d["valid"] = true;
+    d["tensor"] = slot_tensor;
+    d["dimension"] = D;
+    return d;
+}
+
+nb::dict hilbert_memory_query_resonance_cpp(const array& u_query) {
+    eval({u_query});
+    nb::dict d;
+    if (!g_hilbert_memory) {
+        d["count"] = static_cast<uint32_t>(0);
+        return d;
+    }
+    uint32_t count = g_hilbert_memory->count();
+    d["count"] = count;
+    std::vector<float> resonances(count);
+    for (uint32_t i = 0; i < count; ++i) {
+        resonances[i] = g_hilbert_memory->query_slot_resonance(i, u_query.data<float>());
+    }
+    d["resonances"] = array(resonances.data(), {static_cast<int>(count)}, float32);
+    return d;
+}
+
+// ─── 8. PUENTE C++: ENRUTADOR ASOCIATIVO Y DETECTOR DE CRESTA CINEMÁTICA (HITO 2.2) ────
+static std::unique_ptr<aether::FactBandRouter> g_fact_router = nullptr;
+
+nb::dict fact_band_detect_peak_cpp(const std::vector<array>& layer_arrays) {
+    uint32_t num_layers = layer_arrays.size();
+    if (num_layers == 0) throw std::invalid_argument("Vector de capas vacio");
+    uint32_t D = layer_arrays[0].shape(-1);
+
+    // Forzar evaluación de punteros contiguos MLX
+    std::vector<const float*> raw_ptrs(num_layers);
+    for (uint32_t l = 0; l < num_layers; ++l) {
+        mlx::core::eval({layer_arrays[l]});
+        raw_ptrs[l] = layer_arrays[l].data<float>();
+    }
+
+    std::vector<float> kappas;
+    std::vector<aether::KinematicDegeneracy> degen;
+    uint32_t peak_l = aether::FactBandRouter::detect_candidate_band_peak(
+        raw_ptrs, num_layers, D, kappas, &degen
+    );
+
+    array kappas_arr = array(kappas.data(), {static_cast<int>(num_layers)}, float32);
+    nb::dict d;
+    d["peak_layer"]     = peak_l;
+    d["relative_depth"] = static_cast<float>(peak_l) / static_cast<float>(num_layers);
+    d["kappas"]         = kappas_arr;
+    return d;
+}
+
+nb::dict fact_band_route_layer_cpp(const array& h_layer, float threshold = 0.45f, float beta = 16.0f) {
+    uint32_t D = h_layer.shape(-1);
+    if (!g_fact_router || g_fact_router->dimension() != D) {
+        g_fact_router = std::make_unique<aether::FactBandRouter>(D, threshold, beta);
+    }
+    g_fact_router->set_threshold(threshold);
+
+    if (!g_hilbert_memory) {
+        throw std::runtime_error("HilbertMemoryCell no inicializada");
+    }
+
+    mlx::core::eval({h_layer});
+    aether::RouterDecision dec = g_fact_router->evaluate_layer_routing(
+        h_layer.data<float>(), *g_hilbert_memory
+    );
+
+    nb::dict d;
+    d["selected_slot"]      = dec.selected_slot;
+    d["max_resonance_r"]    = dec.max_resonance_r;
+    d["second_resonance_r"] = dec.second_resonance_r;
+    d["resonance_margin"]   = dec.resonance_margin;
+    d["rectified_gate_g"]   = dec.rectified_gate_g;
+    d["is_active"]          = dec.is_active_injection;
+    return d;
+}
+
 // ─── ENLACE DEL MÓDULO NANOBIND ──────────────────────────────────────────────
 NB_MODULE(aether_native_c, m) {
     m.def("dispatch_riemannian_step", &riemannian_step_cpp, "Exp-Map Riemanniano en C++ nativo",
@@ -386,5 +818,58 @@ NB_MODULE(aether_native_c, m) {
     m.def("buffer_reset", &buffer_reset_cpp, "Reinicia el buffer intraciclo");
     m.def("gate_set_mode", &gate_set_mode_cpp, "Configura modo de la compuerta: 0=Pasivo, 1=Activo",
           nb::arg("mode"));
+
+    // Hito 1.3: Unión Conformal Direct-Pointer
+    m.def("dispatch_conformal_coupling", &dispatch_conformal_coupling_cpp,
+          "Ejecuta paso de Acoplamiento Conformal Direct-Pointer (Hito 1.3-R1)",
+          nb::arg("h_state"), nb::arg("u_attractor"), nb::arg("step"),
+          nb::arg("tau_eff") = 0.15f, nb::arg("kappa_att") = 0.80f,
+          nb::arg("beta_gate") = 12.0f, nb::arg("theta_gate") = 0.35f,
+          nb::arg("mode") = 1, nb::arg("force_g") = -1.0f);
+    m.def("junction_reset", &junction_reset_cpp, "Reinicia la union conformal");
+
+    // Hito 2.1: Célula de Memoria Geométrica en Espacio de Hilbert (CPU y Metal)
+    m.def("hilbert_memory_ingest", &hilbert_memory_ingest_cpp,
+          "Ingesta persistente de subproducto en la Celula de Memoria (exige D_C1 == D_C2)",
+          nb::arg("h_subprod"), nb::arg("timestamp"), nb::arg("energy"));
+    m.def("hilbert_memory_pack_two", &hilbert_memory_pack_two_cpp,
+          "Empaquetamiento AND-like de 2 hechos en superposicion (CPU)",
+          nb::arg("m_A"), nb::arg("m_B"));
+    m.def("hilbert_memory_deflate", &hilbert_memory_deflate_cpp,
+          "Deflacion NOT-like (Match and Peel) ortogonal (CPU)",
+          nb::arg("m_pack"), nb::arg("m_target"));
+    m.def("hilbert_memory_style_transport", &hilbert_memory_style_transport_cpp,
+          "Transporte paralelo de estilo sobre el plano tangente (CPU)",
+          nb::arg("h_truth"), nb::arg("u_style"), nb::arg("theta_s"));
+
+    m.def("hilbert_memory_pack_two_metal", &hilbert_memory_pack_two_metal,
+          "Empaquetamiento AND-like de 2 hechos en superposicion (Metal GPU)",
+          nb::arg("m_A"), nb::arg("m_B"));
+    m.def("hilbert_memory_deflate_metal", &hilbert_memory_deflate_metal,
+          "Deflacion NOT-like (Match and Peel) ortogonal (Metal GPU)",
+          nb::arg("m_pack"), nb::arg("m_target"));
+    m.def("hilbert_memory_style_transport_metal", &hilbert_memory_style_transport_metal,
+          "Transporte paralelo de estilo sobre el plano tangente (Metal GPU)",
+          nb::arg("h_truth"), nb::arg("u_style"), nb::arg("theta_s"));
+
+    m.def("hilbert_memory_reset", &hilbert_memory_reset_cpp, "Reinicia la celula de memoria Hilbert");
+
+    // Hito 2.1-D: Consultas de Memoria Inter-Celular (Gap Junction)
+    m.def("hilbert_memory_slot_count", &hilbert_memory_slot_count_cpp, "Numero de slots ocupados en la memoria");
+    m.def("hilbert_memory_get_slot", &hilbert_memory_get_slot_cpp, "Recupera tensor de un slot de memoria",
+          nb::arg("slot_idx"));
+    m.def("hilbert_memory_query_resonance", &hilbert_memory_query_resonance_cpp,
+          "Consulta resonancia de un query contra todos los slots de memoria",
+          nb::arg("u_query"));
+
+    // Hito 2.2: Sustrato de Direccionamiento y Detector de Cresta Cinemática
+    m.def("fact_band_detect_peak", &fact_band_detect_peak_cpp,
+          "Detecta la cresta cinematica kappa(l) de la Candidate Fact Band",
+          nb::arg("layer_arrays"));
+    m.def("fact_band_route_layer", &fact_band_route_layer_cpp,
+          "Enrutamiento asociativo 1xK en hot-path con compuerta rectificada (cero fuga) y margen",
+          nb::arg("h_layer"), nb::arg("threshold") = 0.45f, nb::arg("beta") = 16.0f);
 }
+
+
 
