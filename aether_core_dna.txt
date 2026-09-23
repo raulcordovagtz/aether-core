@@ -1,7 +1,7 @@
 ==========================================================================================
 AETHER ENGINE — CORE ARCHITECTURE DNA (CELLULAR FABRIC & KINEMATIC ROUTER)
-Fecha de Consolidación: 2026-09-22 15:37:28
-Estado Git: Branch: [harness] | Commit: [d776157]
+Fecha de Consolidación: 2026-09-23 04:15:24
+Estado Git: Branch: [harness] | Commit: [970e98f]
 Ubicación raíz: /Users/crotalo/aether_engine
 ==========================================================================================
 
@@ -37,7 +37,7 @@ Ubicación raíz: /Users/crotalo/aether_engine
   29. ✓ tools/compilar_extension_c.py (5,222 bytes)
   30. ✓ tools/transpilar_aether_native_aot.py (5,758 bytes)
   31. ✓ aether_vlm/__init__.py (82 bytes)
-  32. ✓ aether_vlm/coupler.py (24,058 bytes)
+  32. ✓ aether_vlm/coupler.py (24,246 bytes)
   33. ✓ aether_vlm/kernels.py (8,759 bytes)
   34. ✓ aether_vlm/settling.py (2,926 bytes)
   35. ✓ harness/include/cell_harness.h (2,152 bytes)
@@ -50,7 +50,7 @@ Ubicación raíz: /Users/crotalo/aether_engine
   42. ✓ tests/test_hilbert_memory_cell.py (10,189 bytes)
   43. ✓ tests/test_intercell_coupling.py (11,209 bytes)
   44. ✓ tests/test_fact_band_router.py (7,903 bytes)
-  45. ✓ tests/lab09_trajectory_parity.py (10,939 bytes)
+  45. ✓ tests/lab09_trajectory_parity.py (13,109 bytes)
   46. ✓ tests/lab10_active_coupling_qwen.py (10,428 bytes)
   47. ✓ tests/lab11_fact_band_routing.py (14,685 bytes)
   48. ✓ tests/run_macbook_battery.py (6,575 bytes)
@@ -4742,10 +4742,10 @@ AETHER_MODEL_PROFILES = {
     },
     # Perfil 2: Modelos Compactos de atención densa con pesos atados (Qwen3.5-2B)
     "compact_tied": {
-        "theta_steer": 1.40,
-        "kappa": 2.00,
-        "gamma": 0.95,
-        "nu": 0.08,
+        "theta_steer": 0.35,         # Rotación geodésica suave para 24 capas
+        "kappa": 0.20,               # Atractor armónico (sin sobredistorsión)
+        "gamma": 0.30,               # Choque cinético acotado
+        "nu": 0.08,                  # Viscosidad laminar
         "active_layers_ratio": 0.50,  # Capas 12..24
         "slingshot": True,
     },
@@ -7219,6 +7219,33 @@ if __name__ == "__main__":
 ##########################################################################################
 
 #!/usr/bin/env python3
+# ═══════════════════════════════════════════════════════════════════════════════
+# ⚠️ ADVERTENCIA ARQUITECTÓNICA OBLIGATORIA (SSOT — LECCIÓN LAB 09)
+# ═══════════════════════════════════════════════════════════════════════════════
+# ESTE SCRIPT ES UN SENSOR DE TURBULENCIA Y ENTROPÍA, NO UN MODELO BALÍSTICO.
+#
+# 1. LOS PREDICTORES INERCIALES B1 (v_t) Y B2 (a_t) FRACASAN TOKEN-A-TOKEN:
+#    La transición entre tokens consecutivos (t -> t+1) es discreta y sufre saltos
+#    angulares masivos (>53° / ~0.93 rad). Tratar la secuencia de tokens como un
+#    tiro parabólico continuo es un error conceptual grave: la extrapolación inercial
+#    rinde sistemáticamente PEOR que la simple persistencia B0 (Δe < 0).
+#
+# 2. EL VERDADERO PROPÓSITO DE LA CURVATURA κ EN ESTE SCRIPT:
+#    La curvatura de Lagrange κ NO fue diseñada para adivinar el futuro estado h_{t+1}.
+#    Su valor radica exclusivamente en ser un SISMÓGRAFO DE TURBULENCIA: detectar
+#    cuándo la red sufre una deflexión angular brusca (corr(κ, Δθ)) para saber
+#    cuándo el modelo entra en una bifurcación de decisión.
+#
+# 3. EL EJE FÍSICO DE LA CINEMÁTICA EN AETHER:
+#    La cinemática (v, a, κ) opera en la PROFUNDIDAD DE CAPAS (l -> l+1 en prefill),
+#    donde la representación se refina gradualmente para el MISMO token. En el eje
+#    temporal de decode (t -> t+1), la inercia local se disuelve en cada paso.
+#
+# 4. CONDICIÓN SINE QUA NON:
+#    Cualquier intento de timoneo sin acoplamiento a la Fact Band y a la memoria C2
+#    (como advierte la conclusión de este script) degenera en colapso repetitivo.
+# ═══════════════════════════════════════════════════════════════════════════════
+
 """
 tests/lab09_trajectory_parity.py
 ═══════════════════════════════════════════════════════════════════════════════
