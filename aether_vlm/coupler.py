@@ -232,10 +232,10 @@ AETHER_MODEL_PROFILES = {
     },
     # Perfil 2: Modelos Compactos de atención densa con pesos atados (Qwen3.5-2B)
     "compact_tied": {
-        "theta_steer": 1.40,
-        "kappa": 2.00,
-        "gamma": 0.95,
-        "nu": 0.08,
+        "theta_steer": 0.35,         # Rotación geodésica suave para 24 capas
+        "kappa": 0.20,               # Atractor armónico (sin sobredistorsión)
+        "gamma": 0.30,               # Choque cinético acotado
+        "nu": 0.08,                  # Viscosidad laminar
         "active_layers_ratio": 0.50,  # Capas 12..24
         "slingshot": True,
     },
