@@ -1,4 +1,31 @@
 #!/usr/bin/env python3
+# ═══════════════════════════════════════════════════════════════════════════════
+# ⚠️ ADVERTENCIA ARQUITECTÓNICA OBLIGATORIA (SSOT — LECCIÓN LAB 09)
+# ═══════════════════════════════════════════════════════════════════════════════
+# ESTE SCRIPT ES UN SENSOR DE TURBULENCIA Y ENTROPÍA, NO UN MODELO BALÍSTICO.
+#
+# 1. LOS PREDICTORES INERCIALES B1 (v_t) Y B2 (a_t) FRACASAN TOKEN-A-TOKEN:
+#    La transición entre tokens consecutivos (t -> t+1) es discreta y sufre saltos
+#    angulares masivos (>53° / ~0.93 rad). Tratar la secuencia de tokens como un
+#    tiro parabólico continuo es un error conceptual grave: la extrapolación inercial
+#    rinde sistemáticamente PEOR que la simple persistencia B0 (Δe < 0).
+#
+# 2. EL VERDADERO PROPÓSITO DE LA CURVATURA κ EN ESTE SCRIPT:
+#    La curvatura de Lagrange κ NO fue diseñada para adivinar el futuro estado h_{t+1}.
+#    Su valor radica exclusivamente en ser un SISMÓGRAFO DE TURBULENCIA: detectar
+#    cuándo la red sufre una deflexión angular brusca (corr(κ, Δθ)) para saber
+#    cuándo el modelo entra en una bifurcación de decisión.
+#
+# 3. EL EJE FÍSICO DE LA CINEMÁTICA EN AETHER:
+#    La cinemática (v, a, κ) opera en la PROFUNDIDAD DE CAPAS (l -> l+1 en prefill),
+#    donde la representación se refina gradualmente para el MISMO token. En el eje
+#    temporal de decode (t -> t+1), la inercia local se disuelve en cada paso.
+#
+# 4. CONDICIÓN SINE QUA NON:
+#    Cualquier intento de timoneo sin acoplamiento a la Fact Band y a la memoria C2
+#    (como advierte la conclusión de este script) degenera en colapso repetitivo.
+# ═══════════════════════════════════════════════════════════════════════════════
+
 """
 tests/lab09_trajectory_parity.py
 ═══════════════════════════════════════════════════════════════════════════════
