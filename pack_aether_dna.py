@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-pack_aether_dna.py (Edición Tejido Celular & Enrutador Cinemático)
-=================================================================
+pack_aether_dna.py (Edición Tejido Celular & Enrutador Cinemático + Suites Causales)
+===================================================================================
 Genera el volcado consolidado del ADN soberano de Aether Engine:
 núcleo continuo, células autónomas (C1 y C2), búferes UMA, kernels Metal,
-enlace conformal, enrutador de Fact Band y suites causales (LAB 09, 10 y 11).
+enlace conformal, enrutador de Fact Band, herramientas de álgebra universal
+y laboratorios de causalidad e interpretabilidad (LAB 09 a LAB 29).
 """
 
 import os
@@ -16,6 +17,10 @@ OUTPUT_FILE = os.path.join(ROOT_DIR, "aether_core_dna.txt")
 
 # Lista priorizada y quirúrgica de los módulos que definen el sistema completo
 CORE_FILES = [
+    # ── 0. DOCUMENTACIÓN Y ESPECIFICACIÓN DE INSERCIÓN ──
+    "docs/Harness/Nota de herramienta de insercion.md",
+    "docs/Harness/UniversalTensorSolverEnzymeSolver.md",
+
     # ── 1. ESPECIFICACIONES FORMALES (SSOT) ──
     "spec/C07_dirac_eml_spinor.yaml",
     "spec/C08_attractor_potential.yaml",
@@ -33,7 +38,7 @@ CORE_FILES = [
     "include/c_field_state.h",
     "include/safetensors_uma.h",
     "include/phase_branch.h",
-    # Módulos del nuevo Paradigma Celular:
+    # Módulos del Paradigma Celular:
     "include/geodesic_trajectory_cell.h",      # Célula 1 (Proyectiva / Radar / r)
     "include/intracycle_state_buffer.h",       # Búfer UMA 3-Slot Zero-Copy
     "include/permeability_gate.h",             # Compuerta Dual (Modo 0 vs 1)
@@ -50,8 +55,10 @@ CORE_FILES = [
     "metal/hilbert_memory_cell.metal",         # Kernel Álgebra Booleana de Hilbert (Célula 2)
     "metal/fact_band_router.metal",            # Kernel Enrutador de Fact Band en GPU
 
-    # ── 4. KERNEL C++ PURO Y PUENTE NATIVO NANOBIND ──
+    # ── 4. KERNEL C++ PURO, HERRAMIENTAS Y ENZIMAS SIMBÓLICAS ──
     "aether_vlm/aether_native.cpp",            # Dispatcher C++ completo sin callbacks
+    "tools/__init__.py",
+    "tools/universal_constraint_enzyme.py",
     "tools/compilar_extension_c.py",
     "tools/transpilar_aether_native_aot.py",
 
@@ -66,7 +73,7 @@ CORE_FILES = [
     "harness/metal/cell_alu.metal",
     "harness/src/test_harness_runner.mm",
 
-    # ── 7. BATERÍAS DE CERTIFICACIÓN Y LABORATORIOS CAUSALES ──
+    # ── 7. BATERÍAS BASE Y CERTIFICACIÓN CINEMÁTICA ──
     "tests/test_advisor_battery.py",           # Batería base (27/27 tests de invariantes)
     "tests/test_geodesic_trajectory_cell.py",  # Paridad Metal Célula 1 (5 Gates)
     "tests/test_intracycle_buffer.py",         # Verificación de cinemática v_t, a_t
@@ -74,11 +81,75 @@ CORE_FILES = [
     "tests/test_hilbert_memory_cell.py",       # Suite de memoria de Hilbert
     "tests/test_intercell_coupling.py",        # Acoplamiento C1 -> C2
     "tests/test_fact_band_router.py",          # Aislamiento del router de cresta
+    "tests/run_macbook_battery.py",
+    "tests/infer_35b.py",
+
+    # ── 8. SUITE DE LABORATORIOS CAUSALES: PRIMERA ETAPA (LAB 09 - LAB 11) ──
     "tests/lab09_trajectory_parity.py",        # LAB 09 (Persistencia vs Balística)
     "tests/lab10_active_coupling_qwen.py",     # LAB 10 (Vanilla == Passive == Active-0)
     "tests/lab11_fact_band_routing.py",        # LAB 11 (Matriz causal de 8 controles y cresta L=21)
-    "tests/run_macbook_battery.py",
-    "tests/infer_35b.py",
+
+    # ── 9. SUITE DE LABORATORIOS CAUSALES: INTERVENCIÓN Y RESIDUAL (LAB 12 - LAB 16) ──
+    "tests/lab12_causal_activation_patching.py",
+    "tests/lab12_cross_patching_and_digits.py",
+    "tests/lab12_formal_matrix_4x4.py",
+    "tests/lab12_uca_active_inoculation.py",
+    "tests/lab13_causal_state_swap.py",
+    "tests/lab13_r2_multid_freeze_test.py",
+    "tests/lab13_r3_purified_freeze.py",
+    "tests/lab14_neuro_symbolic_closed_loop.py",
+    "tests/lab15_cross_instance_symbolic_reconstruction.py",
+    "tests/lab15_r2_causal_cross_matrix.py",
+    "tests/lab16_abstract_residual_intervention.py",
+    "tests/lab16_r2_gain_curve_and_affine.py",
+    "tests/lab16_r3_functional_specificity_matrix.py",
+    "tests/lab16_r4_disjoint_calibration.py",
+
+    # ── 10. SUITE DE LABORATORIOS CAUSALES: LAZO CERRADO Y RANGO (LAB 17 - LAB 20) ──
+    "tests/lab17_full_closed_loop_autonomous.py",
+    "tests/lab17_r2_symbolic_specificity.py",
+    "tests/lab17_r3_full_inversion_matrix.py",
+    "tests/lab17_r4_rank_expansion.py",
+    "tests/lab17_r5_rank_sweep_and_grassmann.py",
+    "tests/lab18_closed_loop_neuro_symbolic.py",
+    "tests/lab19_paraphrase_generalization_closure.py",
+    "tests/lab20_continuous_decoding_and_closure.py",
+    "tests/lab20_r2_causal_convergence_fail_closed.py",
+    "tests/lab20_r3_purified_identifiability.py",
+    "tests/lab20_r3_symbolic_identifiability_sweep.py",
+
+    # ── 11. SUITE DE LABORATORIOS CAUSALES: IDENTIFICABILIDAD Y TRANSFERENCIA (LAB 21 - LAB 28) ──
+    "tests/lab21_neural_identification_symbolic_filter.py",
+    "tests/lab22_neural_identification_causal_loop.py",
+    "tests/lab23_symbolic_manifold_separation.py",
+    "tests/lab24_scalar_manifold_decoding.py",
+    "tests/lab24_r2_held_out_alpha_decoding.py",
+    "tests/lab25_coordinate_transfer_across_contexts.py",
+    "tests/lab26_cross_domain_coordinate_transfer.py",
+    "tests/lab27_shared_vs_domain_decomposition.py",
+    "tests/lab28_leave_one_domain_out.py",
+    "tests/lab28_r2_lodo_leak_free.py",
+
+    # ── 12. SUITE DE LABORATORIOS CAUSALES: PUZZLES EPISTÉMICOS KRIPKE (LAB 29) ──
+    "tests/lab29_epistemic_puzzle_kripke.py",
+    "tests/lab29_r2_epistemic_non_lexical.py",
+    "tests/lab29_r3_structural_kripke_state.py",
+    "tests/lab29_r4_epistemic_rank_expansion.py",
+    "tests/lab29_r5_overdetermined_kripke_sweep.py",
+    "tests/lab29_r6_functional_classes_competition.py",
+    "tests/lab29_r7_causal_subspace_isolation.py",
+    "tests/lab29_r8_direct_causal_optimization.py",
+    "tests/lab29_r9_true_causal_jacobian.py",
+
+    # ── 13. PRUEBAS DE ÁLGEBRA UNIVERSAL Y PUZZLES COMPLEJOS ──
+    "tests/test_universal_constraint_algebra.py",
+    "tests/test_analyst_challenge.py",
+    "tests/test_hats_puzzle.py",
+    "tests/test_hats_single_shot.py",
+    "tests/test_hats_neurosymbolic_scaffold.py",
+    "tests/test_hats_uca_inoculated.py",
+
+    # ── 14. AGENTES Y HABILIDADES ──
     ".agents/skills/aether-inference/SKILL.md"
 ]
 
@@ -97,7 +168,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as out:
         # Cabecera General
         out.write("=" * 90 + "\n")
-        out.write("AETHER ENGINE — CORE ARCHITECTURE DNA (CELLULAR FABRIC & KINEMATIC ROUTER)\n")
+        out.write("AETHER ENGINE — CORE ARCHITECTURE DNA (CELLULAR FABRIC & CAUSAL SUITE)\n")
         out.write(f"Fecha de Consolidación: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         out.write(f"Estado Git: {get_git_info()}\n")
         out.write(f"Ubicación raíz: {ROOT_DIR}\n")
@@ -138,7 +209,7 @@ def main():
             out.write("#" * 90 + "\n\n")
 
     print("\n" + "=" * 60)
-    print("✓ Volcado celular completado con éxito.")
+    print("✓ Volcado consolidado completado con éxito.")
     print(f"✓ Archivo generado: {OUTPUT_FILE}")
     print(f"✓ Módulos integrados: {found_count} de {len(CORE_FILES)}")
     print(f"✓ Tamaño total: {os.path.getsize(OUTPUT_FILE) / 1024:.1f} KB")
