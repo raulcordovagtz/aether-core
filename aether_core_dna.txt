@@ -1,7 +1,7 @@
 ==========================================================================================
 AETHER ENGINE — CORE ARCHITECTURE DNA (CELLULAR FABRIC & CAUSAL SUITE)
-Fecha de Consolidación: 2026-09-25 00:45:52
-Estado Git: Branch: [harness] | Commit: [3d120b1]
+Fecha de Consolidación: 2026-09-25 01:29:00
+Estado Git: Branch: [harness] | Commit: [bc66870]
 Ubicación raíz: /Users/crotalo/aether_engine
 ==========================================================================================
 
@@ -17,96 +17,100 @@ Ubicación raíz: /Users/crotalo/aether_engine
   09. ✓ spec/control/C020_variational_geodesic_control.yaml (738 bytes)
   10. ✓ spec/coupling/C018_riemannian_confinement.yaml (608 bytes)
   11. ✓ spec/simulation/C019_virtual_trajectory_prediction.yaml (410 bytes)
-  12. ✓ include/field_invariants.h (2,110 bytes)
-  13. ✓ include/field_inference_engine.h (8,388 bytes)
-  14. ✓ include/c_field_state.h (3,969 bytes)
-  15. ✓ include/safetensors_uma.h (4,875 bytes)
-  16. ✓ include/phase_branch.h (2,730 bytes)
-  17. ✓ include/hilbert_memory_cell.h (7,351 bytes)
-  18. ✓ include/fact_band_router.h (7,824 bytes)
-  19. ✓ metal/aether_c008_cognitive_engine.metal (6,926 bytes)
-  20. ✓ metal/aether_c018_riemannian_engine.metal (2,098 bytes)
-  21. ✓ metal/aether_geodesic_engine.metal (9,251 bytes)
-  22. ✓ metal/c_field_qwen38_engine.metal (20,346 bytes)
-  23. ✓ metal/hilbert_memory_cell.metal (5,905 bytes)
-  24. ✓ metal/fact_band_router.metal (3,638 bytes)
-  25. ✓ aether_vlm/aether_native.cpp (22,664 bytes)
-  26. ✓ tools/__init__.py (0 bytes)
-  27. ✓ tools/universal_constraint_enzyme.py (5,073 bytes)
-  28. ✓ tools/compilar_extension_c.py (4,768 bytes)
-  29. ✓ tools/transpilar_aether_native_aot.py (5,758 bytes)
-  30. ✓ aether_vlm/__init__.py (82 bytes)
-  31. ✓ aether_vlm/coupler.py (24,246 bytes)
-  32. ✓ aether_vlm/kernels.py (8,759 bytes)
-  33. ✓ aether_vlm/settling.py (2,926 bytes)
-  34. ✓ harness/include/cell_harness.h (2,152 bytes)
-  35. ✓ harness/metal/cell_alu.metal (1,124 bytes)
-  36. ✓ harness/src/test_harness_runner.mm (2,062 bytes)
-  37. ✓ tests/test_advisor_battery.py (29,134 bytes)
-  38. ✓ tests/test_hilbert_memory_cell.py (10,189 bytes)
-  39. ✓ tests/test_fact_band_router.py (7,903 bytes)
-  40. ✓ tests/run_macbook_battery.py (6,575 bytes)
-  41. ✓ tests/infer_35b.py (2,908 bytes)
-  42. ✗ [NO ENCONTRADO] tests/lab09_trajectory_parity.py
-  43. ✓ tests/lab11_fact_band_routing.py (14,685 bytes)
-  44. ✗ [NO ENCONTRADO] tests/lab12_causal_activation_patching.py
-  45. ✗ [NO ENCONTRADO] tests/lab12_cross_patching_and_digits.py
-  46. ✗ [NO ENCONTRADO] tests/lab12_formal_matrix_4x4.py
-  47. ✗ [NO ENCONTRADO] tests/lab12_uca_active_inoculation.py
-  48. ✗ [NO ENCONTRADO] tests/lab13_causal_state_swap.py
-  49. ✗ [NO ENCONTRADO] tests/lab13_r2_multid_freeze_test.py
-  50. ✓ tests/lab13_r3_purified_freeze.py (10,567 bytes)
-  51. ✓ tests/lab14_neuro_symbolic_closed_loop.py (9,721 bytes)
-  52. ✗ [NO ENCONTRADO] tests/lab15_cross_instance_symbolic_reconstruction.py
-  53. ✓ tests/lab15_r2_causal_cross_matrix.py (9,813 bytes)
-  54. ✗ [NO ENCONTRADO] tests/lab16_abstract_residual_intervention.py
-  55. ✗ [NO ENCONTRADO] tests/lab16_r2_gain_curve_and_affine.py
-  56. ✗ [NO ENCONTRADO] tests/lab16_r3_functional_specificity_matrix.py
-  57. ✓ tests/lab16_r4_disjoint_calibration.py (9,794 bytes)
-  58. ✗ [NO ENCONTRADO] tests/lab17_full_closed_loop_autonomous.py
-  59. ✗ [NO ENCONTRADO] tests/lab17_r2_symbolic_specificity.py
-  60. ✗ [NO ENCONTRADO] tests/lab17_r3_full_inversion_matrix.py
-  61. ✗ [NO ENCONTRADO] tests/lab17_r4_rank_expansion.py
-  62. ✗ [NO ENCONTRADO] tests/lab17_r5_rank_sweep_and_grassmann.py
-  63. ✓ tests/lab18_closed_loop_neuro_symbolic.py (12,583 bytes)
-  64. ✗ [NO ENCONTRADO] tests/lab19_paraphrase_generalization_closure.py
-  65. ✗ [NO ENCONTRADO] tests/lab20_continuous_decoding_and_closure.py
-  66. ✗ [NO ENCONTRADO] tests/lab20_r2_causal_convergence_fail_closed.py
-  67. ✓ tests/lab20_r3_purified_identifiability.py (5,149 bytes)
-  68. ✗ [NO ENCONTRADO] tests/lab20_r3_symbolic_identifiability_sweep.py
-  69. ✗ [NO ENCONTRADO] tests/lab21_neural_identification_symbolic_filter.py
-  70. ✗ [NO ENCONTRADO] tests/lab22_neural_identification_causal_loop.py
-  71. ✓ tests/lab23_symbolic_manifold_separation.py (10,131 bytes)
-  72. ✗ [NO ENCONTRADO] tests/lab24_scalar_manifold_decoding.py
-  73. ✓ tests/lab24_r2_held_out_alpha_decoding.py (8,746 bytes)
-  74. ✗ [NO ENCONTRADO] tests/lab25_coordinate_transfer_across_contexts.py
-  75. ✗ [NO ENCONTRADO] tests/lab26_cross_domain_coordinate_transfer.py
-  76. ✓ tests/lab27_shared_vs_domain_decomposition.py (9,848 bytes)
-  77. ✗ [NO ENCONTRADO] tests/lab28_leave_one_domain_out.py
-  78. ✓ tests/lab28_r2_lodo_leak_free.py (9,819 bytes)
-  79. ✗ [NO ENCONTRADO] tests/lab29_epistemic_puzzle_kripke.py
-  80. ✗ [NO ENCONTRADO] tests/lab29_r2_epistemic_non_lexical.py
-  81. ✗ [NO ENCONTRADO] tests/lab29_r3_structural_kripke_state.py
-  82. ✗ [NO ENCONTRADO] tests/lab29_r4_epistemic_rank_expansion.py
-  83. ✗ [NO ENCONTRADO] tests/lab29_r5_overdetermined_kripke_sweep.py
-  84. ✗ [NO ENCONTRADO] tests/lab29_r6_functional_classes_competition.py
-  85. ✗ [NO ENCONTRADO] tests/lab29_r7_causal_subspace_isolation.py
-  86. ✗ [NO ENCONTRADO] tests/lab29_r8_direct_causal_optimization.py
-  87. ✗ [NO ENCONTRADO] tests/lab29_r9_true_causal_jacobian.py
-  88. ✓ tests/test_universal_constraint_algebra.py (4,983 bytes)
-  89. ✓ tests/test_analyst_challenge.py (12,542 bytes)
-  90. ✗ [NO ENCONTRADO] tests/test_hats_puzzle.py
-  91. ✗ [NO ENCONTRADO] tests/test_hats_single_shot.py
-  92. ✗ [NO ENCONTRADO] tests/test_hats_neurosymbolic_scaffold.py
-  93. ✗ [NO ENCONTRADO] tests/test_hats_uca_inoculated.py
-  94. ✓ .agents/skills/aether-inference/SKILL.md (10,930 bytes)
+  12. ✓ spec/C22_tetrapolar_predictor_cell.yaml (1,126 bytes)
+  13. ✓ include/field_invariants.h (2,110 bytes)
+  14. ✓ include/field_inference_engine.h (8,388 bytes)
+  15. ✓ include/c_field_state.h (3,969 bytes)
+  16. ✓ include/safetensors_uma.h (4,875 bytes)
+  17. ✓ include/phase_branch.h (2,730 bytes)
+  18. ✓ include/hilbert_memory_cell.h (7,351 bytes)
+  19. ✓ include/fact_band_router.h (7,824 bytes)
+  20. ✓ include/tetrapolar_predictor_cell.h (5,056 bytes)
+  21. ✓ metal/aether_c008_cognitive_engine.metal (6,926 bytes)
+  22. ✓ metal/aether_c018_riemannian_engine.metal (2,098 bytes)
+  23. ✓ metal/aether_geodesic_engine.metal (9,251 bytes)
+  24. ✓ metal/c_field_qwen38_engine.metal (20,346 bytes)
+  25. ✓ metal/hilbert_memory_cell.metal (5,905 bytes)
+  26. ✓ metal/fact_band_router.metal (3,638 bytes)
+  27. ✓ metal/tetrapolar_predictor_cell.metal (4,951 bytes)
+  28. ✓ aether_vlm/aether_native.cpp (31,106 bytes)
+  29. ✓ tools/__init__.py (0 bytes)
+  30. ✓ tools/universal_constraint_enzyme.py (5,073 bytes)
+  31. ✓ tools/compilar_extension_c.py (5,722 bytes)
+  32. ✓ tools/transpilar_aether_native_aot.py (5,758 bytes)
+  33. ✓ aether_vlm/__init__.py (82 bytes)
+  34. ✓ aether_vlm/coupler.py (24,031 bytes)
+  35. ✓ aether_vlm/kernels.py (8,759 bytes)
+  36. ✓ aether_vlm/settling.py (2,926 bytes)
+  37. ✓ harness/include/cell_harness.h (2,152 bytes)
+  38. ✓ harness/metal/cell_alu.metal (1,124 bytes)
+  39. ✓ harness/src/test_harness_runner.mm (2,062 bytes)
+  40. ✓ tests/test_advisor_battery.py (29,134 bytes)
+  41. ✓ tests/test_hilbert_memory_cell.py (10,189 bytes)
+  42. ✓ tests/test_fact_band_router.py (7,903 bytes)
+  43. ✓ tests/test_tetrapolar_predictor.py (7,549 bytes)
+  44. ✓ tests/run_macbook_battery.py (6,575 bytes)
+  45. ✓ tests/infer_35b.py (2,908 bytes)
+  46. ✗ [NO ENCONTRADO] tests/lab09_trajectory_parity.py
+  47. ✓ tests/lab11_fact_band_routing.py (14,685 bytes)
+  48. ✗ [NO ENCONTRADO] tests/lab12_causal_activation_patching.py
+  49. ✗ [NO ENCONTRADO] tests/lab12_cross_patching_and_digits.py
+  50. ✗ [NO ENCONTRADO] tests/lab12_formal_matrix_4x4.py
+  51. ✗ [NO ENCONTRADO] tests/lab12_uca_active_inoculation.py
+  52. ✗ [NO ENCONTRADO] tests/lab13_causal_state_swap.py
+  53. ✗ [NO ENCONTRADO] tests/lab13_r2_multid_freeze_test.py
+  54. ✓ tests/lab13_r3_purified_freeze.py (10,567 bytes)
+  55. ✓ tests/lab14_neuro_symbolic_closed_loop.py (9,721 bytes)
+  56. ✗ [NO ENCONTRADO] tests/lab15_cross_instance_symbolic_reconstruction.py
+  57. ✓ tests/lab15_r2_causal_cross_matrix.py (9,813 bytes)
+  58. ✗ [NO ENCONTRADO] tests/lab16_abstract_residual_intervention.py
+  59. ✗ [NO ENCONTRADO] tests/lab16_r2_gain_curve_and_affine.py
+  60. ✗ [NO ENCONTRADO] tests/lab16_r3_functional_specificity_matrix.py
+  61. ✓ tests/lab16_r4_disjoint_calibration.py (9,794 bytes)
+  62. ✗ [NO ENCONTRADO] tests/lab17_full_closed_loop_autonomous.py
+  63. ✗ [NO ENCONTRADO] tests/lab17_r2_symbolic_specificity.py
+  64. ✗ [NO ENCONTRADO] tests/lab17_r3_full_inversion_matrix.py
+  65. ✗ [NO ENCONTRADO] tests/lab17_r4_rank_expansion.py
+  66. ✗ [NO ENCONTRADO] tests/lab17_r5_rank_sweep_and_grassmann.py
+  67. ✓ tests/lab18_closed_loop_neuro_symbolic.py (12,583 bytes)
+  68. ✗ [NO ENCONTRADO] tests/lab19_paraphrase_generalization_closure.py
+  69. ✗ [NO ENCONTRADO] tests/lab20_continuous_decoding_and_closure.py
+  70. ✗ [NO ENCONTRADO] tests/lab20_r2_causal_convergence_fail_closed.py
+  71. ✓ tests/lab20_r3_purified_identifiability.py (5,149 bytes)
+  72. ✗ [NO ENCONTRADO] tests/lab20_r3_symbolic_identifiability_sweep.py
+  73. ✗ [NO ENCONTRADO] tests/lab21_neural_identification_symbolic_filter.py
+  74. ✗ [NO ENCONTRADO] tests/lab22_neural_identification_causal_loop.py
+  75. ✓ tests/lab23_symbolic_manifold_separation.py (10,131 bytes)
+  76. ✗ [NO ENCONTRADO] tests/lab24_scalar_manifold_decoding.py
+  77. ✓ tests/lab24_r2_held_out_alpha_decoding.py (8,746 bytes)
+  78. ✗ [NO ENCONTRADO] tests/lab25_coordinate_transfer_across_contexts.py
+  79. ✗ [NO ENCONTRADO] tests/lab26_cross_domain_coordinate_transfer.py
+  80. ✓ tests/lab27_shared_vs_domain_decomposition.py (9,848 bytes)
+  81. ✗ [NO ENCONTRADO] tests/lab28_leave_one_domain_out.py
+  82. ✓ tests/lab28_r2_lodo_leak_free.py (9,819 bytes)
+  83. ✗ [NO ENCONTRADO] tests/lab29_epistemic_puzzle_kripke.py
+  84. ✗ [NO ENCONTRADO] tests/lab29_r2_epistemic_non_lexical.py
+  85. ✗ [NO ENCONTRADO] tests/lab29_r3_structural_kripke_state.py
+  86. ✗ [NO ENCONTRADO] tests/lab29_r4_epistemic_rank_expansion.py
+  87. ✗ [NO ENCONTRADO] tests/lab29_r5_overdetermined_kripke_sweep.py
+  88. ✗ [NO ENCONTRADO] tests/lab29_r6_functional_classes_competition.py
+  89. ✗ [NO ENCONTRADO] tests/lab29_r7_causal_subspace_isolation.py
+  90. ✗ [NO ENCONTRADO] tests/lab29_r8_direct_causal_optimization.py
+  91. ✗ [NO ENCONTRADO] tests/lab29_r9_true_causal_jacobian.py
+  92. ✓ tests/test_universal_constraint_algebra.py (4,983 bytes)
+  93. ✓ tests/test_analyst_challenge.py (12,542 bytes)
+  94. ✗ [NO ENCONTRADO] tests/test_hats_puzzle.py
+  95. ✗ [NO ENCONTRADO] tests/test_hats_single_shot.py
+  96. ✗ [NO ENCONTRADO] tests/test_hats_neurosymbolic_scaffold.py
+  97. ✗ [NO ENCONTRADO] tests/test_hats_uca_inoculated.py
+  98. ✓ .agents/skills/aether-inference/SKILL.md (10,930 bytes)
 
-Total de módulos catalogados: 94 | Encontrados: 53
+Total de módulos catalogados: 98 | Encontrados: 57
 ==========================================================================================
 
 
 ##########################################################################################
-### ARCHIVO [03/94]: spec/C07_dirac_eml_spinor.yaml
+### ARCHIVO [03/98]: spec/C07_dirac_eml_spinor.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/C07_dirac_eml_spinor.yaml
 ##########################################################################################
 
@@ -138,7 +142,7 @@ audit_status: "ANALYTICALLY_NORMALIZED"
 
 
 ##########################################################################################
-### ARCHIVO [04/94]: spec/C08_attractor_potential.yaml
+### ARCHIVO [04/98]: spec/C08_attractor_potential.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/C08_attractor_potential.yaml
 ##########################################################################################
 
@@ -169,7 +173,7 @@ audit_classification:
 
 
 ##########################################################################################
-### ARCHIVO [05/94]: spec/C13_boolean_attention_algebra.yaml
+### ARCHIVO [05/98]: spec/C13_boolean_attention_algebra.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/C13_boolean_attention_algebra.yaml
 ##########################################################################################
 
@@ -195,7 +199,7 @@ audit_status: "FORMALLY_VERIFIED_AND_CERTIFIED"
 
 
 ##########################################################################################
-### ARCHIVO [06/94]: spec/C16_hybrid_harness_coupling.yaml
+### ARCHIVO [06/98]: spec/C16_hybrid_harness_coupling.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/C16_hybrid_harness_coupling.yaml
 ##########################################################################################
 
@@ -223,7 +227,7 @@ audit_status: "FORMALLY_ARBITRATED_AND_CERTIFIED"
 
 
 ##########################################################################################
-### ARCHIVO [07/94]: spec/branching/C014_phase_branch.yaml
+### ARCHIVO [07/98]: spec/branching/C014_phase_branch.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/branching/C014_phase_branch.yaml
 ##########################################################################################
 
@@ -248,7 +252,7 @@ audit_status: "ANALYTICALLY_STABILIZED"
 
 
 ##########################################################################################
-### ARCHIVO [08/94]: spec/collapse/C021_vapor_condensation_collapse.yaml
+### ARCHIVO [08/98]: spec/collapse/C021_vapor_condensation_collapse.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/collapse/C021_vapor_condensation_collapse.yaml
 ##########################################################################################
 
@@ -275,7 +279,7 @@ audit_status: "CANONICAL_SPECIFICATION_REGISTERED"
 
 
 ##########################################################################################
-### ARCHIVO [09/94]: spec/control/C020_variational_geodesic_control.yaml
+### ARCHIVO [09/98]: spec/control/C020_variational_geodesic_control.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/control/C020_variational_geodesic_control.yaml
 ##########################################################################################
 
@@ -301,7 +305,7 @@ audit_status: "FORMALLY_VERIFIED_AND_CERTIFIED"
 
 
 ##########################################################################################
-### ARCHIVO [10/94]: spec/coupling/C018_riemannian_confinement.yaml
+### ARCHIVO [10/98]: spec/coupling/C018_riemannian_confinement.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/coupling/C018_riemannian_confinement.yaml
 ##########################################################################################
 
@@ -323,7 +327,7 @@ audit_status: "FORMALLY_VERIFIED_AND_CERTIFIED"
 
 
 ##########################################################################################
-### ARCHIVO [11/94]: spec/simulation/C019_virtual_trajectory_prediction.yaml
+### ARCHIVO [11/98]: spec/simulation/C019_virtual_trajectory_prediction.yaml
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/simulation/C019_virtual_trajectory_prediction.yaml
 ##########################################################################################
 
@@ -343,7 +347,43 @@ audit_status: "FORMALLY_VERIFIED_AND_CERTIFIED"
 
 
 ##########################################################################################
-### ARCHIVO [12/94]: include/field_invariants.h
+### ARCHIVO [12/98]: spec/C22_tetrapolar_predictor_cell.yaml
+### RUTA ABSOLUTA: /Users/crotalo/aether_engine/spec/C22_tetrapolar_predictor_cell.yaml
+##########################################################################################
+
+claim_id: "C-022"
+title: "Célula Predictora Geodésica Tetrapolar y Líneas Derivativas en S^{D-1}"
+domain: "Geometría Diferencial en S^{D-1}, Álgebra de Lie so(D)"
+cellular_anatomy:
+  nucleus:
+    role: "Integración geodésica analítica continua y evaluación de 4 líneas derivativas"
+    manifold: "S^{D-1} estricto"
+    complexity: "O(D) tiempo, O(1) memoria"
+  membrane:
+    role: "Confinamiento esférico ||h|| = 1.0 e interfaz zero-copy en memoria unificada (UMA)"
+  cytoplasm:
+    role: "Espacio de acoplamiento enzimático pasivo (placeholder para UCA Solver)"
+governing_equations:
+  geodesic_flow: "h*(tau) = cos(omega * tau) * h_unit + sin(omega * tau) * v_hat"
+  angular_velocity: "omega = ||v_perp|| / ||h||"
+  derivative_lines:
+    grad_onto: "dot(v_hat, U_onto)"
+    grad_teleo: "dot(v_hat, U_teleo)"
+    grad_anti: "dot(v_hat, U_anti)"
+    grad_eos: "dot(v_hat, U_eos)"
+invariants_to_verify:
+  1_sphere_conservation: "abs(||h*(tau)|| - 1.0) < 1e-6 para todo tau"
+  2_identity_at_rest: "||h*(0) - h|| < 1e-7"
+  3_derivative_boundedness: "|grad_pole| <= 1.0 exacto"
+audit_status: "FORMAL_AOT_SPECIFICATION"
+
+
+### FIN DE ARCHIVO: spec/C22_tetrapolar_predictor_cell.yaml
+##########################################################################################
+
+
+##########################################################################################
+### ARCHIVO [13/98]: include/field_invariants.h
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/include/field_invariants.h
 ##########################################################################################
 
@@ -408,7 +448,7 @@ struct ManifoldInvariants {
 
 
 ##########################################################################################
-### ARCHIVO [13/94]: include/field_inference_engine.h
+### ARCHIVO [14/98]: include/field_inference_engine.h
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/include/field_inference_engine.h
 ##########################################################################################
 
@@ -609,7 +649,7 @@ private:
 
 
 ##########################################################################################
-### ARCHIVO [14/94]: include/c_field_state.h
+### ARCHIVO [15/98]: include/c_field_state.h
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/include/c_field_state.h
 ##########################################################################################
 
@@ -747,7 +787,7 @@ public:
 
 
 ##########################################################################################
-### ARCHIVO [15/94]: include/safetensors_uma.h
+### ARCHIVO [16/98]: include/safetensors_uma.h
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/include/safetensors_uma.h
 ##########################################################################################
 
@@ -902,7 +942,7 @@ private:
 
 
 ##########################################################################################
-### ARCHIVO [16/94]: include/phase_branch.h
+### ARCHIVO [17/98]: include/phase_branch.h
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/include/phase_branch.h
 ##########################################################################################
 
@@ -984,7 +1024,7 @@ public:
 
 
 ##########################################################################################
-### ARCHIVO [17/94]: include/hilbert_memory_cell.h
+### ARCHIVO [18/98]: include/hilbert_memory_cell.h
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/include/hilbert_memory_cell.h
 ##########################################################################################
 
@@ -1189,7 +1229,7 @@ private:
 
 
 ##########################################################################################
-### ARCHIVO [18/94]: include/fact_band_router.h
+### ARCHIVO [19/98]: include/fact_band_router.h
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/include/fact_band_router.h
 ##########################################################################################
 
@@ -1404,7 +1444,141 @@ private:
 
 
 ##########################################################################################
-### ARCHIVO [19/94]: metal/aether_c008_cognitive_engine.metal
+### ARCHIVO [20/98]: include/tetrapolar_predictor_cell.h
+### RUTA ABSOLUTA: /Users/crotalo/aether_engine/include/tetrapolar_predictor_cell.h
+##########################################################################################
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 🌌 AETHER ENGINE :: TETRAPOLAR PREDICTOR CELL (CÉLULA 1 - REVAMPED)
+// Núcleo Geodésico Continuo en S^{D-1}, Membrana UMA y Líneas Derivativas
+// CERO tiros parabólicos | CERO buffers temporales ciegos | CERO promedios
+// ═════════════════════════════════════════════════════════════════════════════
+#pragma once
+
+#include <cmath>
+#include <cstdint>
+#include <vector>
+#include <algorithm>
+#include <stdexcept>
+
+namespace aether {
+
+// Estructura de las cuatro primitivas del campo de navegación
+struct TetrapolarPoles {
+    const float* u_onto;   // [D] Premisas / Anclaje factual inicial
+    const float* u_teleo;  // [D] Intención deductiva / Meta de llegada
+    const float* u_anti;   // [D] Subespacio de inconsistencia o contradicción
+    const float* u_eos;    // [D] Vector de colapso terminal (End of Sequence)
+};
+
+// Telemetría analítica calculada por el Núcleo Celular
+struct alignas(16) PredictorTelemetry {
+    float omega_angular_velocity; // Velocidad angular en la variedad rad/paso
+    float curvature_kappa;        // Curvatura de Lagrange instantánea
+    float grad_onto;              // Componente tangencial hacia la ontología
+    float grad_teleo;             // Componente tangencial hacia la teleología
+    float grad_anti;              // Componente tangencial hacia la antítesis
+    float grad_eos;               // Componente tangencial hacia el pozo EOS
+    float teleology_alignment;    // Proyección estática <h*, u_teleo>
+};
+
+class TetrapolarPredictorCell {
+public:
+    explicit TetrapolarPredictorCell(uint32_t dimension = 2048) : D_(dimension) {
+        if (D_ == 0) throw std::invalid_argument("La dimensión debe ser mayor a 0");
+    }
+
+    // ─── NÚCLEO: EXTRAPOLACIÓN GEODÉSICA PURA EN S^{D-1} ────────────────────
+    // h*(tau) = cos(theta) * h_unit + sin(theta) * v_hat
+    // Conserva analíticamente la norma unitaria en cualquier horizonte tau
+    void project_geodesic(
+        float* h_star_out,
+        const float* h_in,
+        const float* v_tangent,
+        float tau,
+        PredictorTelemetry& telemetry,
+        const TetrapolarPoles& poles
+    ) const {
+        float sq_h = 0.0f;
+        float dot_hv = 0.0f;
+
+        for (uint32_t i = 0; i < D_; ++i) {
+            float h = h_in[i];
+            float v = v_tangent[i];
+            sq_h += h * h;
+            dot_hv += h * v;
+        }
+
+        float norm_h = std::sqrt(sq_h + 1e-12f);
+        float inv_norm_h = 1.0f / norm_h;
+
+        // Descomposición tangencial estricta: v_perp = v - (h·v / ||h||^2) * h
+        float coeff_hv = dot_hv * inv_norm_h * inv_norm_h;
+        float sq_v_perp = 0.0f;
+        
+        for (uint32_t i = 0; i < D_; ++i) {
+            float vp = v_tangent[i] - coeff_hv * h_in[i];
+            sq_v_perp += vp * vp;
+        }
+
+        float norm_v_perp = std::sqrt(sq_v_perp + 1e-12f);
+        float inv_norm_vp = 1.0f / norm_v_perp;
+
+        // Parámetros geodésicos en S^{D-1}
+        float omega = norm_v_perp * inv_norm_h;
+        float theta = omega * tau;
+        float cos_t = std::cos(theta);
+        float sin_t = std::sin(theta);
+
+        // Curvatura de flujo local
+        telemetry.omega_angular_velocity = omega;
+        telemetry.curvature_kappa = (norm_v_perp > 1e-6f) ? (omega / norm_h) : 0.0f;
+
+        // Evaluación de las 4 líneas derivativas primitivas contra v_hat:
+        // grad_pole = <v_hat, U_pole>
+        float g_onto = 0.0f, g_teleo = 0.0f, g_anti = 0.0f, g_eos = 0.0f;
+        float dot_teleo_proj = 0.0f;
+
+        for (uint32_t i = 0; i < D_; ++i) {
+            float h_u = h_in[i] * inv_norm_h;
+            float vp = v_tangent[i] - coeff_hv * h_in[i];
+            float v_hat = (norm_v_perp > 1e-8f) ? (vp * inv_norm_vp) : 0.0f;
+
+            // Extrapolación geodésica analítica (Cero tiros parabólicos)
+            float star_val = cos_t * h_u + sin_t * v_hat;
+            h_star_out[i] = star_val;
+
+            // Proyecciones derivativas
+            if (poles.u_onto)  g_onto  += v_hat * poles.u_onto[i];
+            if (poles.u_teleo) g_teleo += v_hat * poles.u_teleo[i];
+            if (poles.u_anti)  g_anti  += v_hat * poles.u_anti[i];
+            if (poles.u_eos)   g_eos   += v_hat * poles.u_eos[i];
+
+            if (poles.u_teleo) dot_teleo_proj += star_val * poles.u_teleo[i];
+        }
+
+        telemetry.grad_onto  = g_onto;
+        telemetry.grad_teleo = g_teleo;
+        telemetry.grad_anti  = g_anti;
+        telemetry.grad_eos   = g_eos;
+        telemetry.teleology_alignment = dot_teleo_proj;
+    }
+
+    uint32_t dimension() const { return D_; }
+
+private:
+    uint32_t D_;
+};
+
+} // namespace aether
+
+
+### FIN DE ARCHIVO: include/tetrapolar_predictor_cell.h
+##########################################################################################
+
+
+##########################################################################################
+### ARCHIVO [21/98]: metal/aether_c008_cognitive_engine.metal
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/metal/aether_c008_cognitive_engine.metal
 ##########################################################################################
 
@@ -1575,7 +1749,7 @@ kernel void c008_cognitive_step(
 
 
 ##########################################################################################
-### ARCHIVO [20/94]: metal/aether_c018_riemannian_engine.metal
+### ARCHIVO [22/98]: metal/aether_c018_riemannian_engine.metal
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/metal/aether_c018_riemannian_engine.metal
 ##########################################################################################
 
@@ -1629,7 +1803,7 @@ kernel void c018_riemannian_direct_step(
 
 
 ##########################################################################################
-### ARCHIVO [21/94]: metal/aether_geodesic_engine.metal
+### ARCHIVO [23/98]: metal/aether_geodesic_engine.metal
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/metal/aether_geodesic_engine.metal
 ##########################################################################################
 
@@ -1864,7 +2038,7 @@ kernel void aether_gqa_attention_linear_exact(
 
 
 ##########################################################################################
-### ARCHIVO [22/94]: metal/c_field_qwen38_engine.metal
+### ARCHIVO [24/98]: metal/c_field_qwen38_engine.metal
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/metal/c_field_qwen38_engine.metal
 ##########################################################################################
 
@@ -2350,7 +2524,7 @@ kernel void gemv_qkv_fused_gqa_4bit(
 
 
 ##########################################################################################
-### ARCHIVO [23/94]: metal/hilbert_memory_cell.metal
+### ARCHIVO [25/98]: metal/hilbert_memory_cell.metal
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/metal/hilbert_memory_cell.metal
 ##########################################################################################
 
@@ -2519,7 +2693,7 @@ kernel void dispatch_hilbert_style_transport(
 
 
 ##########################################################################################
-### ARCHIVO [24/94]: metal/fact_band_router.metal
+### ARCHIVO [26/98]: metal/fact_band_router.metal
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/metal/fact_band_router.metal
 ##########################################################################################
 
@@ -2616,7 +2790,142 @@ kernel void dispatch_fact_band_batch_resonance(
 
 
 ##########################################################################################
-### ARCHIVO [25/94]: aether_vlm/aether_native.cpp
+### ARCHIVO [27/98]: metal/tetrapolar_predictor_cell.metal
+### RUTA ABSOLUTA: /Users/crotalo/aether_engine/metal/tetrapolar_predictor_cell.metal
+##########################################################################################
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 🌌 AETHER ENGINE :: TETRAPOLAR PREDICTOR CELL GPU KERNEL
+// Trazado Geodésico en S^{D-1} y Reducción de 4 Líneas Derivativas en SRAM
+// ═════════════════════════════════════════════════════════════════════════════
+#include <metal_stdlib>
+#include <metal_simdgroup>
+
+using namespace metal;
+
+struct TetrapolarTelemetryGPU {
+    float omega_angular_velocity;
+    float curvature_kappa;
+    float grad_onto;
+    float grad_teleo;
+    float grad_anti;
+    float grad_eos;
+    float teleology_alignment;
+};
+
+kernel void dispatch_tetrapolar_predictor_step(
+    device const float*            h_in          [[buffer(0)]],
+    device const float*            v_tangent     [[buffer(1)]],
+    device const float*            u_onto        [[buffer(2)]],
+    device const float*            u_teleo       [[buffer(3)]],
+    device const float*            u_anti        [[buffer(4)]],
+    device const float*            u_eos         [[buffer(5)]],
+    device float*                  h_star_out    [[buffer(6)]],
+    device TetrapolarTelemetryGPU* telemetry_out [[buffer(7)]],
+    constant float&                tau           [[buffer(8)]],
+    constant uint&                 D             [[buffer(9)]],
+    threadgroup float*             sh_acc        [[threadgroup(0)]],
+    uint tid                                     [[thread_index_in_threadgroup]],
+    uint t_per_group                             [[threads_per_threadgroup]]
+) {
+    // 1. Reducción en paralelo de normas y producto escalar inicial
+    float l_sq_h = 0.0f;
+    float l_sq_v = 0.0f;
+    float l_dot_hv = 0.0f;
+
+    for (uint i = tid; i < D; i += t_per_group) {
+        float h = h_in[i];
+        float v = v_tangent[i];
+        l_sq_h   += h * h;
+        l_sq_v   += v * v;
+        l_dot_hv += h * v;
+    }
+
+    sh_acc[tid * 3 + 0] = l_sq_h;
+    sh_acc[tid * 3 + 1] = l_sq_v;
+    sh_acc[tid * 3 + 2] = l_dot_hv;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    for (uint s = t_per_group / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            sh_acc[tid * 3 + 0] += sh_acc[(tid + s) * 3 + 0];
+            sh_acc[tid * 3 + 1] += sh_acc[(tid + s) * 3 + 1];
+            sh_acc[tid * 3 + 2] += sh_acc[(tid + s) * 3 + 2];
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+
+    float sq_h   = sh_acc[0];
+    float sq_v   = sh_acc[1];
+    float dot_hv = sh_acc[2];
+
+    float norm_h = sqrt(max(sq_h, 0.0f) + 1e-12f);
+    float inv_norm_h = 1.0f / norm_h;
+
+    float coeff_hv = dot_hv * inv_norm_h * inv_norm_h;
+    float sq_v_perp = max(0.0f, sq_v - (dot_hv * dot_hv * inv_norm_h * inv_norm_h));
+    float norm_v_perp = sqrt(sq_v_perp + 1e-12f);
+    float inv_norm_vp = 1.0f / norm_v_perp;
+
+    float omega = norm_v_perp * inv_norm_h;
+    float theta = omega * tau;
+    float cos_t = cos(theta);
+    float sin_t = sin(theta);
+
+    // 2. Proyección Geodésica y evaluación simultánea de las 4 líneas derivativas
+    float l_g_onto = 0.0f, l_g_teleo = 0.0f, l_g_anti = 0.0f, l_g_eos = 0.0f;
+    float l_dot_teleo_proj = 0.0f;
+
+    for (uint i = tid; i < D; i += t_per_group) {
+        float h_u = h_in[i] * inv_norm_h;
+        float vp = v_tangent[i] - coeff_hv * h_in[i];
+        float v_hat = (norm_v_perp > 1e-8f) ? (vp * inv_norm_vp) : 0.0f;
+
+        float star = cos_t * h_u + sin_t * v_hat;
+        h_star_out[i] = star;
+
+        l_g_onto  += v_hat * u_onto[i];
+        l_g_teleo += v_hat * u_teleo[i];
+        l_g_anti  += v_hat * u_anti[i];
+        l_g_eos   += v_hat * u_eos[i];
+        l_dot_teleo_proj += star * u_teleo[i];
+    }
+
+    // 3. Reducción de derivadas
+    sh_acc[tid * 5 + 0] = l_g_onto;
+    sh_acc[tid * 5 + 1] = l_g_teleo;
+    sh_acc[tid * 5 + 2] = l_g_anti;
+    sh_acc[tid * 5 + 3] = l_g_eos;
+    sh_acc[tid * 5 + 4] = l_dot_teleo_proj;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    for (uint s = t_per_group / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            for (uint k = 0; k < 5; ++k) {
+                sh_acc[tid * 5 + k] += sh_acc[(tid + s) * 5 + k];
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+
+    if (tid == 0) {
+        telemetry_out->omega_angular_velocity = omega;
+        telemetry_out->curvature_kappa        = (norm_v_perp > 1e-6f) ? (omega / norm_h) : 0.0f;
+        telemetry_out->grad_onto              = sh_acc[0];
+        telemetry_out->grad_teleo             = sh_acc[1];
+        telemetry_out->grad_anti              = sh_acc[2];
+        telemetry_out->grad_eos               = sh_acc[3];
+        telemetry_out->teleology_alignment    = sh_acc[4];
+    }
+}
+
+
+### FIN DE ARCHIVO: metal/tetrapolar_predictor_cell.metal
+##########################################################################################
+
+
+##########################################################################################
+### ARCHIVO [28/98]: aether_vlm/aether_native.cpp
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/aether_vlm/aether_native.cpp
 ##########################################################################################
 
@@ -2636,6 +2945,7 @@ kernel void dispatch_fact_band_batch_resonance(
 #import <Foundation/Foundation.h>
 #include "../include/hilbert_memory_cell.h"
 #include "../include/fact_band_router.h"
+#include "../include/tetrapolar_predictor_cell.h"
 
 namespace nb = nanobind;
 using namespace mlx::core;
@@ -2727,8 +3037,7 @@ static id<MTLCommandQueue> g_metal_queue = nil;
 static std::unique_ptr<aether::HilbertMemoryCell> g_hilbert_memory = nullptr;
 
 
-// ─── 7. PUENTE C++ & METAL: CÉLULA DE MEMORIA GEOMÉTRICA (HITO 2.1) ───────────
-// (g_hilbert_memory declarado antes de dispatch_conformal_coupling_cpp para Gap Junction)
+// ─── 5. PUENTE C++ & METAL: CÉLULA DE MEMORIA GEOMÉTRICA (HITO 2.1) ───────────
 
 // Metal pipeline states y buffers para HilbertMemoryCell
 static id<MTLComputePipelineState> g_metal_pso_pack = nil;
@@ -3077,6 +3386,179 @@ nb::dict fact_band_route_layer_cpp(const array& h_layer, float threshold = 0.45f
     return d;
 }
 
+// ─── 8. PUENTE C++ & METAL: PREDICTOR GEODÉSICO TETRAPOLAR (C-022) ───────────
+static id<MTLComputePipelineState> g_metal_pso_pred = nil;
+static id<MTLBuffer> g_buf_pred_h = nil;
+static id<MTLBuffer> g_buf_pred_v = nil;
+static id<MTLBuffer> g_buf_pred_onto = nil;
+static id<MTLBuffer> g_buf_pred_teleo = nil;
+static id<MTLBuffer> g_buf_pred_anti = nil;
+static id<MTLBuffer> g_buf_pred_eos = nil;
+static id<MTLBuffer> g_buf_pred_out = nil;
+static id<MTLBuffer> g_buf_pred_tel = nil;
+static size_t g_buf_pred_capacity = 0;
+
+static void init_metal_tetrapolar_predictor() {
+    if (g_metal_pso_pred != nil) return;
+    @autoreleasepool {
+        if (!g_metal_device) {
+            g_metal_device = MTLCreateSystemDefaultDevice();
+        }
+        if (!g_metal_queue) {
+            g_metal_queue = [g_metal_device newCommandQueue];
+        }
+
+        NSError* err = nil;
+        NSString* path = @"metal/tetrapolar_predictor_cell.metallib";
+        if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            path = @"/Users/crotalo/aether_engine/metal/tetrapolar_predictor_cell.metallib";
+        }
+        NSURL* libURL = [NSURL fileURLWithPath:path];
+        id<MTLLibrary> lib = [g_metal_device newLibraryWithURL:libURL error:&err];
+        if (!lib) {
+            throw std::runtime_error("No se pudo cargar tetrapolar_predictor_cell.metallib: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+
+        id<MTLFunction> fn = [lib newFunctionWithName:@"dispatch_tetrapolar_predictor_step"];
+        if (!fn) {
+            throw std::runtime_error("Función dispatch_tetrapolar_predictor_step no encontrada en metallib");
+        }
+
+        g_metal_pso_pred = [g_metal_device newComputePipelineStateWithFunction:fn error:&err];
+        if (!g_metal_pso_pred) {
+            throw std::runtime_error("Error creando pipeline state Metal para predictor: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+    }
+}
+
+static void ensure_metal_predictor_buffers(size_t required_bytes) {
+    if (g_buf_pred_h != nil && g_buf_pred_capacity >= required_bytes) return;
+    size_t cap = std::max(required_bytes, static_cast<size_t>(8192 * sizeof(float)));
+    g_buf_pred_h     = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_v     = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_onto  = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_teleo = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_anti  = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_eos   = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_out   = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    if (!g_buf_pred_tel) {
+        g_buf_pred_tel = [g_metal_device newBufferWithLength:sizeof(aether::PredictorTelemetry) options:MTLResourceStorageModeShared];
+    }
+    g_buf_pred_capacity = cap;
+}
+
+nb::dict tetrapolar_predictor_step_cpp(
+    const array& h_in,
+    const array& v_tangent,
+    const array& u_onto,
+    const array& u_teleo,
+    const array& u_anti,
+    const array& u_eos,
+    float tau = 0.0f
+) {
+    eval({h_in, v_tangent, u_onto, u_teleo, u_anti, u_eos});
+    uint32_t D = static_cast<uint32_t>(h_in.shape(-1));
+    static std::vector<float> g_pred_h_star;
+    if (g_pred_h_star.size() < D) g_pred_h_star.resize(D);
+
+    aether::TetrapolarPoles poles{
+        u_onto.data<float>(),
+        u_teleo.data<float>(),
+        u_anti.data<float>(),
+        u_eos.data<float>()
+    };
+
+    aether::PredictorTelemetry tel{};
+    aether::TetrapolarPredictorCell cell(D);
+    cell.project_geodesic(g_pred_h_star.data(), h_in.data<float>(), v_tangent.data<float>(), tau, tel, poles);
+
+    array h_star = array(g_pred_h_star.data(), {static_cast<int>(D)}, float32);
+
+    nb::dict telemetry_dict;
+    telemetry_dict["omega_angular_velocity"] = tel.omega_angular_velocity;
+    telemetry_dict["curvature_kappa"]        = tel.curvature_kappa;
+    telemetry_dict["grad_onto"]              = tel.grad_onto;
+    telemetry_dict["grad_teleo"]             = tel.grad_teleo;
+    telemetry_dict["grad_anti"]              = tel.grad_anti;
+    telemetry_dict["grad_eos"]               = tel.grad_eos;
+    telemetry_dict["teleology_alignment"]    = tel.teleology_alignment;
+
+    nb::dict res;
+    res["h_star"]    = h_star;
+    res["telemetry"] = telemetry_dict;
+    return res;
+}
+
+nb::dict tetrapolar_predictor_step_metal(
+    const array& h_in,
+    const array& v_tangent,
+    const array& u_onto,
+    const array& u_teleo,
+    const array& u_anti,
+    const array& u_eos,
+    float tau = 0.0f
+) {
+    init_metal_tetrapolar_predictor();
+    eval({h_in, v_tangent, u_onto, u_teleo, u_anti, u_eos});
+
+    uint32_t D = static_cast<uint32_t>(h_in.shape(-1));
+    size_t bytes_vec = D * sizeof(float);
+    ensure_metal_predictor_buffers(bytes_vec);
+
+    @autoreleasepool {
+        std::memcpy([g_buf_pred_h contents], h_in.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_v contents], v_tangent.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_onto contents], u_onto.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_teleo contents], u_teleo.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_anti contents], u_anti.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_eos contents], u_eos.data<float>(), bytes_vec);
+
+        id<MTLCommandBuffer> cmd = [g_metal_queue commandBufferWithUnretainedReferences];
+        id<MTLComputeCommandEncoder> enc = [cmd computeCommandEncoder];
+
+        [enc setComputePipelineState:g_metal_pso_pred];
+        [enc setBuffer:g_buf_pred_h offset:0 atIndex:0];
+        [enc setBuffer:g_buf_pred_v offset:0 atIndex:1];
+        [enc setBuffer:g_buf_pred_onto offset:0 atIndex:2];
+        [enc setBuffer:g_buf_pred_teleo offset:0 atIndex:3];
+        [enc setBuffer:g_buf_pred_anti offset:0 atIndex:4];
+        [enc setBuffer:g_buf_pred_eos offset:0 atIndex:5];
+        [enc setBuffer:g_buf_pred_out offset:0 atIndex:6];
+        [enc setBuffer:g_buf_pred_tel offset:0 atIndex:7];
+        [enc setBytes:&tau length:sizeof(float) atIndex:8];
+        [enc setBytes:&D length:sizeof(uint32_t) atIndex:9];
+
+        // 256 threads * 5 floats = 5120 bytes de memoria compartida
+        [enc setThreadgroupMemoryLength:256 * 5 * sizeof(float) atIndex:0];
+        [enc dispatchThreadgroups:MTLSizeMake(1, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+        [enc endEncoding];
+
+        [cmd commit];
+        [cmd waitUntilCompleted];
+
+        float* p_out = (float*)[g_buf_pred_out contents];
+        aether::PredictorTelemetry* p_tel = (aether::PredictorTelemetry*)[g_buf_pred_tel contents];
+
+        array h_star(p_out, {static_cast<int>(D)}, float32);
+
+        nb::dict telemetry_dict;
+        telemetry_dict["omega_angular_velocity"] = p_tel->omega_angular_velocity;
+        telemetry_dict["curvature_kappa"]        = p_tel->curvature_kappa;
+        telemetry_dict["grad_onto"]              = p_tel->grad_onto;
+        telemetry_dict["grad_teleo"]             = p_tel->grad_teleo;
+        telemetry_dict["grad_anti"]              = p_tel->grad_anti;
+        telemetry_dict["grad_eos"]               = p_tel->grad_eos;
+        telemetry_dict["teleology_alignment"]    = p_tel->teleology_alignment;
+
+        nb::dict res;
+        res["h_star"]    = h_star;
+        res["telemetry"] = telemetry_dict;
+        return res;
+    }
+}
+
 // ─── ENLACE DEL MÓDULO NANOBIND ──────────────────────────────────────────────
 NB_MODULE(aether_native_c, m) {
     m.def("dispatch_riemannian_step", &riemannian_step_cpp, "Exp-Map Riemanniano en C++ nativo",
@@ -3131,6 +3613,18 @@ NB_MODULE(aether_native_c, m) {
     m.def("fact_band_route_layer", &fact_band_route_layer_cpp,
           "Enrutamiento asociativo 1xK en hot-path con compuerta rectificada (cero fuga) y margen",
           nb::arg("h_layer"), nb::arg("threshold") = 0.45f, nb::arg("beta") = 16.0f);
+
+    // C-022: Predictor Geodésico Tetrapolar (CPU y Metal GPU)
+    m.def("tetrapolar_predictor_step", &tetrapolar_predictor_step_cpp,
+          "Extrapolación geodésica analítica en S^{D-1} y 4 líneas derivativas (CPU)",
+          nb::arg("h_in"), nb::arg("v_tangent"),
+          nb::arg("u_onto"), nb::arg("u_teleo"), nb::arg("u_anti"), nb::arg("u_eos"),
+          nb::arg("tau") = 0.0f);
+    m.def("tetrapolar_predictor_step_metal", &tetrapolar_predictor_step_metal,
+          "Extrapolación geodésica analítica en S^{D-1} y 4 líneas derivativas (Metal GPU)",
+          nb::arg("h_in"), nb::arg("v_tangent"),
+          nb::arg("u_onto"), nb::arg("u_teleo"), nb::arg("u_anti"), nb::arg("u_eos"),
+          nb::arg("tau") = 0.0f);
 }
 
 
@@ -3142,7 +3636,7 @@ NB_MODULE(aether_native_c, m) {
 
 
 ##########################################################################################
-### ARCHIVO [26/94]: tools/__init__.py
+### ARCHIVO [29/98]: tools/__init__.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tools/__init__.py
 ##########################################################################################
 
@@ -3153,7 +3647,7 @@ NB_MODULE(aether_native_c, m) {
 
 
 ##########################################################################################
-### ARCHIVO [27/94]: tools/universal_constraint_enzyme.py
+### ARCHIVO [30/98]: tools/universal_constraint_enzyme.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tools/universal_constraint_enzyme.py
 ##########################################################################################
 
@@ -3299,7 +3793,7 @@ class UniversalTensorEnzyme:
 
 
 ##########################################################################################
-### ARCHIVO [28/94]: tools/compilar_extension_c.py
+### ARCHIVO [31/98]: tools/compilar_extension_c.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tools/compilar_extension_c.py
 ##########################################################################################
 
@@ -3312,7 +3806,8 @@ print("═" * 78)
 
 metal_shaders = [
     ("metal/hilbert_memory_cell.metal", "metal/hilbert_memory_cell.metallib", "metal/hilbert_memory_cell.air"),
-    ("metal/fact_band_router.metal", "metal/fact_band_router.metallib", "metal/fact_band_router.air")
+    ("metal/fact_band_router.metal", "metal/fact_band_router.metallib", "metal/fact_band_router.air"),
+    ("metal/tetrapolar_predictor_cell.metal", "metal/tetrapolar_predictor_cell.metallib", "metal/tetrapolar_predictor_cell.air")
 ]
 
 for src, out, air in metal_shaders:
@@ -3431,6 +3926,23 @@ if res.returncode == 0:
     mx.eval(pack_metal["result"])
     print("✓ hilbert_memory_pack_two_metal (Metal GPU): degenerate =", pack_metal["degenerate"])
 
+    # Validación funcional C-022: Predictor Geodésico Tetrapolar (CPU y Metal GPU)
+    h_in = mx.zeros((D,)) + (1.0 / (D ** 0.5))
+    v_tan = mx.zeros((D,))
+    v_tan[1] = 0.25
+    u_o = mx.zeros((D,)) + (1.0 / (D ** 0.5))
+    u_t = mx.zeros((D,)); u_t[1] = 1.0
+    u_a = mx.zeros((D,)); u_a[1] = -1.0
+    u_e = mx.zeros((D,)); u_e[2] = 1.0
+
+    pred_cpu = aether_native_c.tetrapolar_predictor_step(h_in, v_tan, u_o, u_t, u_a, u_e, 0.5)
+    mx.eval(pred_cpu["h_star"])
+    print("✓ tetrapolar_predictor_step (CPU): grad_teleo =", pred_cpu["telemetry"]["grad_teleo"])
+
+    pred_metal = aether_native_c.tetrapolar_predictor_step_metal(h_in, v_tan, u_o, u_t, u_a, u_e, 0.5)
+    mx.eval(pred_metal["h_star"])
+    print("✓ tetrapolar_predictor_step_metal (Metal GPU): grad_teleo =", pred_metal["telemetry"]["grad_teleo"])
+
     print("\n🚀 ¡Módulo aether_native_c (C++ y Metal GPU) compilado, enlazado y ejecutado al 100% con éxito!")
 else:
     print("❌ Fallo en la compilación.")
@@ -3442,7 +3954,7 @@ else:
 
 
 ##########################################################################################
-### ARCHIVO [29/94]: tools/transpilar_aether_native_aot.py
+### ARCHIVO [32/98]: tools/transpilar_aether_native_aot.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tools/transpilar_aether_native_aot.py
 ##########################################################################################
 
@@ -3582,7 +4094,7 @@ print("✓ aether_vlm/aether_native.cpp emitido automáticamente desde los contr
 
 
 ##########################################################################################
-### ARCHIVO [30/94]: aether_vlm/__init__.py
+### ARCHIVO [33/98]: aether_vlm/__init__.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/aether_vlm/__init__.py
 ##########################################################################################
 
@@ -3595,7 +4107,7 @@ from .coupler import AetherEngine
 
 
 ##########################################################################################
-### ARCHIVO [31/94]: aether_vlm/coupler.py
+### ARCHIVO [34/98]: aether_vlm/coupler.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/aether_vlm/coupler.py
 ##########################################################################################
 
@@ -3651,13 +4163,9 @@ class AetherCoupledLayer:
                         slot_dict = aether_native_c.hilbert_memory_get_slot(dec["selected_slot"])
                         if slot_dict.get("valid", False):
                             u_fact = slot_dict["tensor"]
-                            t = self.state_ref.get("gen_step", 0)
-                            res = aether_native_c.dispatch_conformal_coupling(
-                                h_unit, u_fact, step=t, tau_eff=0.15, kappa_att=0.80,
-                                beta_gate=12.0, theta_gate=0.35, mode=1
-                            )
-                            h_steered = (res["h_steered"] * (norm_h - 1e-12)).astype(h.dtype)
-                            h = h_steered[None, None, :]
+                            theta_inj = 0.15 * float(dec.get("rectified_gate_g", 1.0))
+                            h_steered = aether_native_c.dispatch_riemannian_step(h_token, u_fact, theta_inj)
+                            h = h_steered[None, None, :].astype(h.dtype)
                             self.state_ref["last_fact_decision"] = dec
             except Exception:
                 pass
@@ -4126,7 +4634,7 @@ class AetherEngine:
 
 
 ##########################################################################################
-### ARCHIVO [32/94]: aether_vlm/kernels.py
+### ARCHIVO [35/98]: aether_vlm/kernels.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/aether_vlm/kernels.py
 ##########################################################################################
 
@@ -4338,7 +4846,7 @@ def dispatch_vapor_condensation(z_impact, z_L_star, nu=0.12, kappa_n=0.15):
 
 
 ##########################################################################################
-### ARCHIVO [33/94]: aether_vlm/settling.py
+### ARCHIVO [36/98]: aether_vlm/settling.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/aether_vlm/settling.py
 ##########################################################################################
 
@@ -4416,7 +4924,7 @@ def settle_multimodal_thought(vis, prompt, D, processor, embed_layer=None, tau_s
 
 
 ##########################################################################################
-### ARCHIVO [34/94]: harness/include/cell_harness.h
+### ARCHIVO [37/98]: harness/include/cell_harness.h
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/harness/include/cell_harness.h
 ##########################################################################################
 
@@ -4476,7 +4984,7 @@ public:
 
 
 ##########################################################################################
-### ARCHIVO [35/94]: harness/metal/cell_alu.metal
+### ARCHIVO [38/98]: harness/metal/cell_alu.metal
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/harness/metal/cell_alu.metal
 ##########################################################################################
 
@@ -4530,7 +5038,7 @@ kernel void execute_symbolic_cell(
 
 
 ##########################################################################################
-### ARCHIVO [36/94]: harness/src/test_harness_runner.mm
+### ARCHIVO [39/98]: harness/src/test_harness_runner.mm
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/harness/src/test_harness_runner.mm
 ##########################################################################################
 
@@ -4582,7 +5090,7 @@ int main() {
 
 
 ##########################################################################################
-### ARCHIVO [37/94]: tests/test_advisor_battery.py
+### ARCHIVO [40/98]: tests/test_advisor_battery.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/test_advisor_battery.py
 ##########################################################################################
 
@@ -5148,7 +5656,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [38/94]: tests/test_hilbert_memory_cell.py
+### ARCHIVO [41/98]: tests/test_hilbert_memory_cell.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/test_hilbert_memory_cell.py
 ##########################################################################################
 
@@ -5346,7 +5854,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [39/94]: tests/test_fact_band_router.py
+### ARCHIVO [42/98]: tests/test_fact_band_router.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/test_fact_band_router.py
 ##########################################################################################
 
@@ -5510,7 +6018,179 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [40/94]: tests/run_macbook_battery.py
+### ARCHIVO [43/98]: tests/test_tetrapolar_predictor.py
+### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/test_tetrapolar_predictor.py
+##########################################################################################
+
+#!/usr/bin/env python3
+"""
+tests/test_tetrapolar_predictor.py
+═══════════════════════════════════════════════════════════════════════════════
+SUITE DE CERTIFICACIÓN FORMAL: PREDICTOR GEODÉSICO TETRAPOLAR (FASE 1)
+SSOT: spec/C22_tetrapolar_predictor_cell.yaml
+Verificaciones:
+  1. Confinamiento esférico absoluto ||h*(tau)|| = 1.000000 para todo tau
+  2. Identidad matemática en reposo h*(0) == h_in
+  3. Acotación física de líneas derivativas |grad_pole| <= 1.0
+  4. Sensibilidad direccional: grad_teleo > 0 hacia la meta, grad_anti < 0
+  5. Paridad numérica estricta entre CPU C++20 y GPU Metal
+═══════════════════════════════════════════════════════════════════════════════
+"""
+import sys, os, math
+if sys.executable != "/opt/miniconda3/bin/python3":
+    os.execv("/opt/miniconda3/bin/python3", ["/opt/miniconda3/bin/python3"] + sys.argv)
+
+import numpy as np
+import mlx.core as mx
+
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("aether_vlm"))
+
+import aether_native_c
+
+EPS = 1e-6
+DIMS = [1024, 2048, 5120]
+
+def section(title):
+    print("\n" + "═" * 78)
+    print(f"  {title}")
+    print("═" * 78)
+
+def test_tetrapolar_predictor():
+    section("C-022: CERTIFICACIÓN UNITARIA PREDICTOR GEODÉSICO TETRAPOLAR")
+    np.random.seed(42)
+
+    for D in DIMS:
+        print(f"\n▶ PROBANDO EN DIMENSIÓN D = {D}...")
+
+        # Generar estado h y velocidad v
+        h_raw = np.random.randn(D).astype(np.float32)
+        h = h_raw / np.linalg.norm(h_raw)
+
+        v_raw = np.random.randn(D).astype(np.float32)
+        v = v_raw - np.dot(v_raw, h) * h  # Ortogonal a h
+        v = v / np.linalg.norm(v) * 0.25   # Magnitud angular finita
+
+        # Generar las 4 primitivas ortonormalizadas
+        def make_unit(vec): return vec / np.linalg.norm(vec)
+
+        v_hat = v / np.linalg.norm(v)
+        u_onto  = make_unit(np.random.randn(D).astype(np.float32))
+        
+        noise_t = np.random.randn(D).astype(np.float32)
+        noise_t = (noise_t / np.linalg.norm(noise_t)) * 0.05
+        u_teleo = make_unit(v_hat + noise_t)  # Fuertemente alineado con v (cos > 0.95)
+
+        noise_a = np.random.randn(D).astype(np.float32)
+        noise_a = (noise_a / np.linalg.norm(noise_a)) * 0.05
+        u_anti  = make_unit(-v_hat + noise_a) # Fuertemente opuesto a v (cos < -0.95)
+
+        u_eos   = make_unit(np.random.randn(D).astype(np.float32))
+
+        # Enviar arrays MLX a la extensión nativa
+        h_mx       = mx.array(h)
+        v_mx       = mx.array(v)
+        u_onto_mx  = mx.array(u_onto)
+        u_teleo_mx = mx.array(u_teleo)
+        u_anti_mx  = mx.array(u_anti)
+        u_eos_mx   = mx.array(u_eos)
+        mx.eval(h_mx, v_mx, u_onto_mx, u_teleo_mx, u_anti_mx, u_eos_mx)
+
+        # ── TEST 1: Identidad en Reposo (tau = 0.0) ──
+        res_t0_cpu = aether_native_c.tetrapolar_predictor_step(
+            h_mx, v_mx, u_onto_mx, u_teleo_mx, u_anti_mx, u_eos_mx, tau=0.0
+        )
+        res_t0_metal = aether_native_c.tetrapolar_predictor_step_metal(
+            h_mx, v_mx, u_onto_mx, u_teleo_mx, u_anti_mx, u_eos_mx, tau=0.0
+        )
+        h_star_0_cpu = np.array(res_t0_cpu["h_star"])
+        h_star_0_metal = np.array(res_t0_metal["h_star"])
+        diff_t0_cpu = np.linalg.norm(h_star_0_cpu - h)
+        diff_t0_metal = np.linalg.norm(h_star_0_metal - h)
+        assert diff_t0_cpu < EPS, f"Error CPU en identidad tau=0: {diff_t0_cpu:.2e}"
+        assert diff_t0_metal < EPS, f"Error Metal en identidad tau=0: {diff_t0_metal:.2e}"
+        print(f"  [✅ PASS] Identidad en reposo (tau=0): CPU err={diff_t0_cpu:.2e}, Metal err={diff_t0_metal:.2e} < 1e-6")
+
+        # ── TEST 2: Confinamiento Esférico Estricto (tau ∈ [0.1 .. 2.0]) ──
+        taus = [0.1, 0.5, 1.0, 1.5, 2.0]
+        max_norm_err_cpu = 0.0
+        max_norm_err_metal = 0.0
+        max_diff_cpu_metal = 0.0
+
+        for tau in taus:
+            res_tau_cpu = aether_native_c.tetrapolar_predictor_step(
+                h_mx, v_mx, u_onto_mx, u_teleo_mx, u_anti_mx, u_eos_mx, tau=tau
+            )
+            res_tau_metal = aether_native_c.tetrapolar_predictor_step_metal(
+                h_mx, v_mx, u_onto_mx, u_teleo_mx, u_anti_mx, u_eos_mx, tau=tau
+            )
+            
+            arr_cpu = np.array(res_tau_cpu["h_star"])
+            arr_metal = np.array(res_tau_metal["h_star"])
+            
+            norm_star_cpu = np.linalg.norm(arr_cpu)
+            norm_star_metal = np.linalg.norm(arr_metal)
+            
+            err_norm_cpu = abs(norm_star_cpu - 1.0)
+            err_norm_metal = abs(norm_star_metal - 1.0)
+            diff_cm = np.max(np.abs(arr_cpu - arr_metal))
+
+            max_norm_err_cpu = max(max_norm_err_cpu, err_norm_cpu)
+            max_norm_err_metal = max(max_norm_err_metal, err_norm_metal)
+            max_diff_cpu_metal = max(max_diff_cpu_metal, diff_cm)
+
+            assert err_norm_cpu < EPS, f"Violación de norma CPU en tau={tau}: {norm_star_cpu}"
+            assert err_norm_metal < EPS, f"Violación de norma Metal en tau={tau}: {norm_star_metal}"
+            assert diff_cm < EPS, f"Discrepancia CPU vs Metal en tau={tau}: {diff_cm:.2e}"
+
+        print(f"  [✅ PASS] Confinamiento esférico exacto para tau ∈ [0.1..2.0]:")
+        print(f"      • CPU max |norm - 1|   = {max_norm_err_cpu:.2e} < 1e-6")
+        print(f"      • Metal max |norm - 1| = {max_norm_err_metal:.2e} < 1e-6")
+        print(f"      • Paridad CPU ↔ Metal  = {max_diff_cpu_metal:.2e} < 1e-6")
+
+        # ── TEST 3: Sensibilidad de las 4 Líneas Derivativas ──
+        tel = res_tau_cpu["telemetry"]
+        tel_metal = res_tau_metal["telemetry"]
+        g_onto  = tel["grad_onto"]
+        g_teleo = tel["grad_teleo"]
+        g_anti  = tel["grad_anti"]
+        g_eos   = tel["grad_eos"]
+
+        assert -1.0001 <= g_onto <= 1.0001
+        assert -1.0001 <= g_teleo <= 1.0001
+        assert -1.0001 <= g_anti <= 1.0001
+        assert -1.0001 <= g_eos <= 1.0001
+
+        # u_teleo estaba alineado con v -> grad_teleo debe ser claramente positivo
+        # u_anti estaba opuesto a v -> grad_anti debe ser claramente negativo
+        assert g_teleo > 0.50, f"grad_teleo debió ser fuertemente positivo: {g_teleo}"
+        assert g_anti < -0.50, f"grad_anti debió ser fuertemente negativo: {g_anti}"
+
+        # Paridad de telemetría CPU vs Metal
+        assert abs(tel["grad_teleo"] - tel_metal["grad_teleo"]) < 1e-5
+        assert abs(tel["grad_anti"] - tel_metal["grad_anti"]) < 1e-5
+        assert abs(tel["omega_angular_velocity"] - tel_metal["omega_angular_velocity"]) < 1e-5
+
+        print(f"  [✅ PASS] Líneas Derivativas del Tetrapolo:")
+        print(f"      • grad_teleo (Hacia la meta)  : {g_teleo:+.4f} > +0.50")
+        print(f"      • grad_anti  (Hacia el error) : {g_anti:+.4f} < -0.50")
+        print(f"      • grad_onto  (Anclaje base)   : {g_onto:+.4f}")
+        print(f"      • grad_eos   (Cierre final)   : {g_eos:+.4f}")
+        print(f"      • teleology_alignment (<h*, u>): {tel['teleology_alignment']:+.4f}")
+        print(f"      • Paridad de derivadas CPU ↔ Metal < 1e-5 ✓")
+
+    section("RESULTADO: PREDICTOR GEODÉSICO TETRAPOLAR 100% CERTIFICADO")
+
+if __name__ == "__main__":
+    test_tetrapolar_predictor()
+
+
+### FIN DE ARCHIVO: tests/test_tetrapolar_predictor.py
+##########################################################################################
+
+
+##########################################################################################
+### ARCHIVO [44/98]: tests/run_macbook_battery.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/run_macbook_battery.py
 ##########################################################################################
 
@@ -5681,7 +6361,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [41/94]: tests/infer_35b.py
+### ARCHIVO [45/98]: tests/infer_35b.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/infer_35b.py
 ##########################################################################################
 
@@ -5770,7 +6450,7 @@ print("=" * 70)
 
 
 ##########################################################################################
-### ARCHIVO [43/94]: tests/lab11_fact_band_routing.py
+### ARCHIVO [47/98]: tests/lab11_fact_band_routing.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab11_fact_band_routing.py
 ##########################################################################################
 
@@ -6101,7 +6781,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [50/94]: tests/lab13_r3_purified_freeze.py
+### ARCHIVO [54/98]: tests/lab13_r3_purified_freeze.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab13_r3_purified_freeze.py
 ##########################################################################################
 
@@ -6353,7 +7033,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [51/94]: tests/lab14_neuro_symbolic_closed_loop.py
+### ARCHIVO [55/98]: tests/lab14_neuro_symbolic_closed_loop.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab14_neuro_symbolic_closed_loop.py
 ##########################################################################################
 
@@ -6567,7 +7247,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [53/94]: tests/lab15_r2_causal_cross_matrix.py
+### ARCHIVO [57/98]: tests/lab15_r2_causal_cross_matrix.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab15_r2_causal_cross_matrix.py
 ##########################################################################################
 
@@ -6790,7 +7470,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [57/94]: tests/lab16_r4_disjoint_calibration.py
+### ARCHIVO [61/98]: tests/lab16_r4_disjoint_calibration.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab16_r4_disjoint_calibration.py
 ##########################################################################################
 
@@ -7010,7 +7690,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [63/94]: tests/lab18_closed_loop_neuro_symbolic.py
+### ARCHIVO [67/98]: tests/lab18_closed_loop_neuro_symbolic.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab18_closed_loop_neuro_symbolic.py
 ##########################################################################################
 
@@ -7297,7 +7977,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [67/94]: tests/lab20_r3_purified_identifiability.py
+### ARCHIVO [71/98]: tests/lab20_r3_purified_identifiability.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab20_r3_purified_identifiability.py
 ##########################################################################################
 
@@ -7430,7 +8110,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [71/94]: tests/lab23_symbolic_manifold_separation.py
+### ARCHIVO [75/98]: tests/lab23_symbolic_manifold_separation.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab23_symbolic_manifold_separation.py
 ##########################################################################################
 
@@ -7666,7 +8346,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [73/94]: tests/lab24_r2_held_out_alpha_decoding.py
+### ARCHIVO [77/98]: tests/lab24_r2_held_out_alpha_decoding.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab24_r2_held_out_alpha_decoding.py
 ##########################################################################################
 
@@ -7875,7 +8555,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [76/94]: tests/lab27_shared_vs_domain_decomposition.py
+### ARCHIVO [80/98]: tests/lab27_shared_vs_domain_decomposition.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab27_shared_vs_domain_decomposition.py
 ##########################################################################################
 
@@ -8097,7 +8777,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [78/94]: tests/lab28_r2_lodo_leak_free.py
+### ARCHIVO [82/98]: tests/lab28_r2_lodo_leak_free.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/lab28_r2_lodo_leak_free.py
 ##########################################################################################
 
@@ -8322,7 +9002,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [88/94]: tests/test_universal_constraint_algebra.py
+### ARCHIVO [92/98]: tests/test_universal_constraint_algebra.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/test_universal_constraint_algebra.py
 ##########################################################################################
 
@@ -8440,7 +9120,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [89/94]: tests/test_analyst_challenge.py
+### ARCHIVO [93/98]: tests/test_analyst_challenge.py
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/tests/test_analyst_challenge.py
 ##########################################################################################
 
@@ -8737,7 +9417,7 @@ if __name__ == "__main__":
 
 
 ##########################################################################################
-### ARCHIVO [94/94]: .agents/skills/aether-inference/SKILL.md
+### ARCHIVO [98/98]: .agents/skills/aether-inference/SKILL.md
 ### RUTA ABSOLUTA: /Users/crotalo/aether_engine/.agents/skills/aether-inference/SKILL.md
 ##########################################################################################
 

@@ -14,6 +14,7 @@
 #import <Foundation/Foundation.h>
 #include "../include/hilbert_memory_cell.h"
 #include "../include/fact_band_router.h"
+#include "../include/tetrapolar_predictor_cell.h"
 
 namespace nb = nanobind;
 using namespace mlx::core;
@@ -454,6 +455,179 @@ nb::dict fact_band_route_layer_cpp(const array& h_layer, float threshold = 0.45f
     return d;
 }
 
+// ─── 8. PUENTE C++ & METAL: PREDICTOR GEODÉSICO TETRAPOLAR (C-022) ───────────
+static id<MTLComputePipelineState> g_metal_pso_pred = nil;
+static id<MTLBuffer> g_buf_pred_h = nil;
+static id<MTLBuffer> g_buf_pred_v = nil;
+static id<MTLBuffer> g_buf_pred_onto = nil;
+static id<MTLBuffer> g_buf_pred_teleo = nil;
+static id<MTLBuffer> g_buf_pred_anti = nil;
+static id<MTLBuffer> g_buf_pred_eos = nil;
+static id<MTLBuffer> g_buf_pred_out = nil;
+static id<MTLBuffer> g_buf_pred_tel = nil;
+static size_t g_buf_pred_capacity = 0;
+
+static void init_metal_tetrapolar_predictor() {
+    if (g_metal_pso_pred != nil) return;
+    @autoreleasepool {
+        if (!g_metal_device) {
+            g_metal_device = MTLCreateSystemDefaultDevice();
+        }
+        if (!g_metal_queue) {
+            g_metal_queue = [g_metal_device newCommandQueue];
+        }
+
+        NSError* err = nil;
+        NSString* path = @"metal/tetrapolar_predictor_cell.metallib";
+        if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            path = @"/Users/crotalo/aether_engine/metal/tetrapolar_predictor_cell.metallib";
+        }
+        NSURL* libURL = [NSURL fileURLWithPath:path];
+        id<MTLLibrary> lib = [g_metal_device newLibraryWithURL:libURL error:&err];
+        if (!lib) {
+            throw std::runtime_error("No se pudo cargar tetrapolar_predictor_cell.metallib: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+
+        id<MTLFunction> fn = [lib newFunctionWithName:@"dispatch_tetrapolar_predictor_step"];
+        if (!fn) {
+            throw std::runtime_error("Función dispatch_tetrapolar_predictor_step no encontrada en metallib");
+        }
+
+        g_metal_pso_pred = [g_metal_device newComputePipelineStateWithFunction:fn error:&err];
+        if (!g_metal_pso_pred) {
+            throw std::runtime_error("Error creando pipeline state Metal para predictor: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+    }
+}
+
+static void ensure_metal_predictor_buffers(size_t required_bytes) {
+    if (g_buf_pred_h != nil && g_buf_pred_capacity >= required_bytes) return;
+    size_t cap = std::max(required_bytes, static_cast<size_t>(8192 * sizeof(float)));
+    g_buf_pred_h     = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_v     = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_onto  = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_teleo = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_anti  = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_eos   = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    g_buf_pred_out   = [g_metal_device newBufferWithLength:cap options:MTLResourceStorageModeShared];
+    if (!g_buf_pred_tel) {
+        g_buf_pred_tel = [g_metal_device newBufferWithLength:sizeof(aether::PredictorTelemetry) options:MTLResourceStorageModeShared];
+    }
+    g_buf_pred_capacity = cap;
+}
+
+nb::dict tetrapolar_predictor_step_cpp(
+    const array& h_in,
+    const array& v_tangent,
+    const array& u_onto,
+    const array& u_teleo,
+    const array& u_anti,
+    const array& u_eos,
+    float tau = 0.0f
+) {
+    eval({h_in, v_tangent, u_onto, u_teleo, u_anti, u_eos});
+    uint32_t D = static_cast<uint32_t>(h_in.shape(-1));
+    static std::vector<float> g_pred_h_star;
+    if (g_pred_h_star.size() < D) g_pred_h_star.resize(D);
+
+    aether::TetrapolarPoles poles{
+        u_onto.data<float>(),
+        u_teleo.data<float>(),
+        u_anti.data<float>(),
+        u_eos.data<float>()
+    };
+
+    aether::PredictorTelemetry tel{};
+    aether::TetrapolarPredictorCell cell(D);
+    cell.project_geodesic(g_pred_h_star.data(), h_in.data<float>(), v_tangent.data<float>(), tau, tel, poles);
+
+    array h_star = array(g_pred_h_star.data(), {static_cast<int>(D)}, float32);
+
+    nb::dict telemetry_dict;
+    telemetry_dict["omega_angular_velocity"] = tel.omega_angular_velocity;
+    telemetry_dict["curvature_kappa"]        = tel.curvature_kappa;
+    telemetry_dict["grad_onto"]              = tel.grad_onto;
+    telemetry_dict["grad_teleo"]             = tel.grad_teleo;
+    telemetry_dict["grad_anti"]              = tel.grad_anti;
+    telemetry_dict["grad_eos"]               = tel.grad_eos;
+    telemetry_dict["teleology_alignment"]    = tel.teleology_alignment;
+
+    nb::dict res;
+    res["h_star"]    = h_star;
+    res["telemetry"] = telemetry_dict;
+    return res;
+}
+
+nb::dict tetrapolar_predictor_step_metal(
+    const array& h_in,
+    const array& v_tangent,
+    const array& u_onto,
+    const array& u_teleo,
+    const array& u_anti,
+    const array& u_eos,
+    float tau = 0.0f
+) {
+    init_metal_tetrapolar_predictor();
+    eval({h_in, v_tangent, u_onto, u_teleo, u_anti, u_eos});
+
+    uint32_t D = static_cast<uint32_t>(h_in.shape(-1));
+    size_t bytes_vec = D * sizeof(float);
+    ensure_metal_predictor_buffers(bytes_vec);
+
+    @autoreleasepool {
+        std::memcpy([g_buf_pred_h contents], h_in.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_v contents], v_tangent.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_onto contents], u_onto.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_teleo contents], u_teleo.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_anti contents], u_anti.data<float>(), bytes_vec);
+        std::memcpy([g_buf_pred_eos contents], u_eos.data<float>(), bytes_vec);
+
+        id<MTLCommandBuffer> cmd = [g_metal_queue commandBufferWithUnretainedReferences];
+        id<MTLComputeCommandEncoder> enc = [cmd computeCommandEncoder];
+
+        [enc setComputePipelineState:g_metal_pso_pred];
+        [enc setBuffer:g_buf_pred_h offset:0 atIndex:0];
+        [enc setBuffer:g_buf_pred_v offset:0 atIndex:1];
+        [enc setBuffer:g_buf_pred_onto offset:0 atIndex:2];
+        [enc setBuffer:g_buf_pred_teleo offset:0 atIndex:3];
+        [enc setBuffer:g_buf_pred_anti offset:0 atIndex:4];
+        [enc setBuffer:g_buf_pred_eos offset:0 atIndex:5];
+        [enc setBuffer:g_buf_pred_out offset:0 atIndex:6];
+        [enc setBuffer:g_buf_pred_tel offset:0 atIndex:7];
+        [enc setBytes:&tau length:sizeof(float) atIndex:8];
+        [enc setBytes:&D length:sizeof(uint32_t) atIndex:9];
+
+        // 256 threads * 5 floats = 5120 bytes de memoria compartida
+        [enc setThreadgroupMemoryLength:256 * 5 * sizeof(float) atIndex:0];
+        [enc dispatchThreadgroups:MTLSizeMake(1, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+        [enc endEncoding];
+
+        [cmd commit];
+        [cmd waitUntilCompleted];
+
+        float* p_out = (float*)[g_buf_pred_out contents];
+        aether::PredictorTelemetry* p_tel = (aether::PredictorTelemetry*)[g_buf_pred_tel contents];
+
+        array h_star(p_out, {static_cast<int>(D)}, float32);
+
+        nb::dict telemetry_dict;
+        telemetry_dict["omega_angular_velocity"] = p_tel->omega_angular_velocity;
+        telemetry_dict["curvature_kappa"]        = p_tel->curvature_kappa;
+        telemetry_dict["grad_onto"]              = p_tel->grad_onto;
+        telemetry_dict["grad_teleo"]             = p_tel->grad_teleo;
+        telemetry_dict["grad_anti"]              = p_tel->grad_anti;
+        telemetry_dict["grad_eos"]               = p_tel->grad_eos;
+        telemetry_dict["teleology_alignment"]    = p_tel->teleology_alignment;
+
+        nb::dict res;
+        res["h_star"]    = h_star;
+        res["telemetry"] = telemetry_dict;
+        return res;
+    }
+}
+
 // ─── ENLACE DEL MÓDULO NANOBIND ──────────────────────────────────────────────
 NB_MODULE(aether_native_c, m) {
     m.def("dispatch_riemannian_step", &riemannian_step_cpp, "Exp-Map Riemanniano en C++ nativo",
@@ -508,6 +682,18 @@ NB_MODULE(aether_native_c, m) {
     m.def("fact_band_route_layer", &fact_band_route_layer_cpp,
           "Enrutamiento asociativo 1xK en hot-path con compuerta rectificada (cero fuga) y margen",
           nb::arg("h_layer"), nb::arg("threshold") = 0.45f, nb::arg("beta") = 16.0f);
+
+    // C-022: Predictor Geodésico Tetrapolar (CPU y Metal GPU)
+    m.def("tetrapolar_predictor_step", &tetrapolar_predictor_step_cpp,
+          "Extrapolación geodésica analítica en S^{D-1} y 4 líneas derivativas (CPU)",
+          nb::arg("h_in"), nb::arg("v_tangent"),
+          nb::arg("u_onto"), nb::arg("u_teleo"), nb::arg("u_anti"), nb::arg("u_eos"),
+          nb::arg("tau") = 0.0f);
+    m.def("tetrapolar_predictor_step_metal", &tetrapolar_predictor_step_metal,
+          "Extrapolación geodésica analítica en S^{D-1} y 4 líneas derivativas (Metal GPU)",
+          nb::arg("h_in"), nb::arg("v_tangent"),
+          nb::arg("u_onto"), nb::arg("u_teleo"), nb::arg("u_anti"), nb::arg("u_eos"),
+          nb::arg("tau") = 0.0f);
 }
 
 

@@ -7,7 +7,8 @@ print("═" * 78)
 
 metal_shaders = [
     ("metal/hilbert_memory_cell.metal", "metal/hilbert_memory_cell.metallib", "metal/hilbert_memory_cell.air"),
-    ("metal/fact_band_router.metal", "metal/fact_band_router.metallib", "metal/fact_band_router.air")
+    ("metal/fact_band_router.metal", "metal/fact_band_router.metallib", "metal/fact_band_router.air"),
+    ("metal/tetrapolar_predictor_cell.metal", "metal/tetrapolar_predictor_cell.metallib", "metal/tetrapolar_predictor_cell.air")
 ]
 
 for src, out, air in metal_shaders:
@@ -125,6 +126,23 @@ if res.returncode == 0:
     pack_metal = aether_native_c.hilbert_memory_pack_two_metal(mA, mB)
     mx.eval(pack_metal["result"])
     print("✓ hilbert_memory_pack_two_metal (Metal GPU): degenerate =", pack_metal["degenerate"])
+
+    # Validación funcional C-022: Predictor Geodésico Tetrapolar (CPU y Metal GPU)
+    h_in = mx.zeros((D,)) + (1.0 / (D ** 0.5))
+    v_tan = mx.zeros((D,))
+    v_tan[1] = 0.25
+    u_o = mx.zeros((D,)) + (1.0 / (D ** 0.5))
+    u_t = mx.zeros((D,)); u_t[1] = 1.0
+    u_a = mx.zeros((D,)); u_a[1] = -1.0
+    u_e = mx.zeros((D,)); u_e[2] = 1.0
+
+    pred_cpu = aether_native_c.tetrapolar_predictor_step(h_in, v_tan, u_o, u_t, u_a, u_e, 0.5)
+    mx.eval(pred_cpu["h_star"])
+    print("✓ tetrapolar_predictor_step (CPU): grad_teleo =", pred_cpu["telemetry"]["grad_teleo"])
+
+    pred_metal = aether_native_c.tetrapolar_predictor_step_metal(h_in, v_tan, u_o, u_t, u_a, u_e, 0.5)
+    mx.eval(pred_metal["h_star"])
+    print("✓ tetrapolar_predictor_step_metal (Metal GPU): grad_teleo =", pred_metal["telemetry"]["grad_teleo"])
 
     print("\n🚀 ¡Módulo aether_native_c (C++ y Metal GPU) compilado, enlazado y ejecutado al 100% con éxito!")
 else:

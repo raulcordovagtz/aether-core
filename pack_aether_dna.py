@@ -31,6 +31,7 @@ CORE_FILES = [
     "spec/control/C020_variational_geodesic_control.yaml",
     "spec/coupling/C018_riemannian_confinement.yaml",
     "spec/simulation/C019_virtual_trajectory_prediction.yaml",
+    "spec/C22_tetrapolar_predictor_cell.yaml",
 
     # ── 2. CABECERAS C++20: INFRAESTRUCTURA UMA Y TEJIDO CELULAR ──
     "include/field_invariants.h",
@@ -41,6 +42,7 @@ CORE_FILES = [
     # Módulos del Paradigma Celular:
     "include/hilbert_memory_cell.h",           # Célula 2 (Memoria Markoviana 10 KB)
     "include/fact_band_router.h",              # Enrutador Cinemático de Cresta l*
+    "include/tetrapolar_predictor_cell.h",     # Célula 1 Revamped (Predictor Geodésico Tetrapolar)
 
     # ── 3. KERNELS NATIVOS DE METAL GPU ──
     "metal/aether_c008_cognitive_engine.metal",
@@ -49,6 +51,7 @@ CORE_FILES = [
     "metal/c_field_qwen38_engine.metal",
     "metal/hilbert_memory_cell.metal",         # Kernel Álgebra Booleana de Hilbert (Célula 2)
     "metal/fact_band_router.metal",            # Kernel Enrutador de Fact Band en GPU
+    "metal/tetrapolar_predictor_cell.metal",   # Kernel Predictor Tetrapolar en GPU
 
     # ── 4. KERNEL C++ PURO, HERRAMIENTAS Y ENZIMAS SIMBÓLICAS ──
     "aether_vlm/aether_native.cpp",            # Dispatcher C++ completo sin callbacks
@@ -72,6 +75,7 @@ CORE_FILES = [
     "tests/test_advisor_battery.py",           # Batería base (27/27 tests de invariantes)
     "tests/test_hilbert_memory_cell.py",       # Suite de memoria de Hilbert
     "tests/test_fact_band_router.py",          # Aislamiento del router de cresta
+    "tests/test_tetrapolar_predictor.py",      # Certificación formal C-022 Predictor Tetrapolar
     "tests/run_macbook_battery.py",
     "tests/infer_35b.py",
 

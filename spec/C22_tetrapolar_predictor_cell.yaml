@@ -1,0 +1,25 @@
+claim_id: "C-022"
+title: "Célula Predictora Geodésica Tetrapolar y Líneas Derivativas en S^{D-1}"
+domain: "Geometría Diferencial en S^{D-1}, Álgebra de Lie so(D)"
+cellular_anatomy:
+  nucleus:
+    role: "Integración geodésica analítica continua y evaluación de 4 líneas derivativas"
+    manifold: "S^{D-1} estricto"
+    complexity: "O(D) tiempo, O(1) memoria"
+  membrane:
+    role: "Confinamiento esférico ||h|| = 1.0 e interfaz zero-copy en memoria unificada (UMA)"
+  cytoplasm:
+    role: "Espacio de acoplamiento enzimático pasivo (placeholder para UCA Solver)"
+governing_equations:
+  geodesic_flow: "h*(tau) = cos(omega * tau) * h_unit + sin(omega * tau) * v_hat"
+  angular_velocity: "omega = ||v_perp|| / ||h||"
+  derivative_lines:
+    grad_onto: "dot(v_hat, U_onto)"
+    grad_teleo: "dot(v_hat, U_teleo)"
+    grad_anti: "dot(v_hat, U_anti)"
+    grad_eos: "dot(v_hat, U_eos)"
+invariants_to_verify:
+  1_sphere_conservation: "abs(||h*(tau)|| - 1.0) < 1e-6 para todo tau"
+  2_identity_at_rest: "||h*(0) - h|| < 1e-7"
+  3_derivative_boundedness: "|grad_pole| <= 1.0 exacto"
+audit_status: "FORMAL_AOT_SPECIFICATION"
