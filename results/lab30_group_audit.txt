@@ -1,0 +1,100 @@
+==============================================================================
+LAB30 — AUDITORÍA DE ESTRUCTURA DE GRUPOS
+==============================================================================
+
+N records: 640
+
+1. CAMPOS TOP-LEVEL
+------------------------------------------------------------------------------
+correct                  present=640/640 types=bool
+cycle_id                 present=640/640 types=int
+expected                 present=640/640 types=str
+extracted                present=568/640 types=NoneType,str
+family                   present=640/640 types=str
+generated                present=640/640 types=str
+layer                    present=640/640 types=int
+max_tokens               present=640/640 types=int
+model                    present=640/640 types=str
+prompt                   present=640/640 types=str
+task_id                  present=640/640 types=str
+temperature              present=640/640 types=float
+top_p                    present=640/640 types=float
+trajectory               present=640/640 types=list
+variant_id               present=640/640 types=int
+
+2. CANDIDATOS A IDENTIFICADORES
+------------------------------------------------------------------------------
+
+task_id:
+  unique = 20
+  top    = [('A01', 32), ('A02', 32), ('A03', 32), ('A04', 32), ('L01', 32), ('L02', 32), ('L03', 32), ('L04', 32), ('E01', 32), ('E02', 32), ('E03', 32), ('E04', 32)]
+
+variant_id:
+  unique = 4
+  top    = [('0', 160), ('1', 160), ('2', 160), ('3', 160)]
+
+cycle_id:
+  unique = 8
+  top    = [('0', 80), ('1', 80), ('2', 80), ('3', 80), ('4', 80), ('5', 80), ('6', 80), ('7', 80)]
+
+temperature:
+  unique = 1
+  top    = [('0.7', 640)]
+
+family:
+  unique = 5
+  top    = [('arithmetic', 128), ('logic', 128), ('epistemic', 128), ('programming', 128), ('robustness', 128)]
+
+3. PRIMER REGISTRO — METADATA SOLAMENTE
+------------------------------------------------------------------------------
+{
+  "task_id": "A01",
+  "family": "arithmetic",
+  "variant_id": 0,
+  "cycle_id": 0,
+  "prompt": "Solve for x: 3x + 5 = 26. Be brief.",
+  "generated": "To solve for $x$ in the equation $3x + 5 = 26$, we first isolate the variable by subtracting 5 from both sides:\n$$3x = 26 - 5$$\n$$3x = 21$$\nNext, divide by 3 to find $x$:\n$$x = \\frac{21}{3}$$\n$$x = 7$$\n\n7",
+  "correct": true,
+  "expected": "7",
+  "extracted": "7",
+  "model": "/Users/crotalo/.lmstudio/models/lmstudio-community/Qwen3.5-0.8B-MLX-4bit",
+  "layer": 19,
+  "max_tokens": 128,
+  "temperature": 0.7,
+  "top_p": 0.9
+}
+
+4. MATRIZ FAMILY × CORRECT
+------------------------------------------------------------------------------
+arithmetic         N=128  correct=96   error=32  
+epistemic          N=128  correct=64   error=64  
+logic              N=128  correct=120  error=8   
+programming        N=128  correct=128  error=0   
+robustness         N=128  correct=128  error=0   
+
+5. REPETICIÓN DE METADATA
+------------------------------------------------------------------------------
+Unique metadata signatures : 640
+Repeated signatures        : 0
+
+6. LONGITUD POR FAMILY × RESULTADO
+------------------------------------------------------------------------------
+arithmetic        
+  correct : N=96 mean=95.67 min=38 max=129
+  error   : N=32 mean=126.25 min=118 max=129
+epistemic         
+  correct : N=64 mean=116.62 min=64 max=129
+  error   : N=64 mean=113.00 min=61 max=129
+logic             
+  correct : N=120 mean=80.80 min=40 max=129
+  error   : N=8 mean=3.00 min=3 max=3
+programming       
+  correct : N=128 mean=66.69 min=9 max=108
+  error   : n/a
+robustness        
+  correct : N=128 mean=76.94 min=26 max=129
+  error   : n/a
+
+==============================================================================
+FIN
+==============================================================================
