@@ -5,9 +5,7 @@ print("═" * 78)
 print(" 🔨 COMPILACIÓN DEL MOTOR NATIVO AETHER (C++20 & METAL GPU)")
 print("═" * 78)
 
-# 0. Compilación de shaders Metal a .metallib
 metal_shaders = [
-    ("metal/geodesic_trajectory_cell.metal", "metal/geodesic_trajectory_cell.metallib", "metal/geodesic_trajectory_cell.air"),
     ("metal/hilbert_memory_cell.metal", "metal/hilbert_memory_cell.metallib", "metal/hilbert_memory_cell.air"),
     ("metal/fact_band_router.metal", "metal/fact_band_router.metallib", "metal/fact_band_router.air")
 ]
@@ -115,20 +113,18 @@ if res.returncode == 0:
     mx.eval(out_cond)
     print("✓ dispatch_vapor_condensation:", out_cond)
 
-    # Validación funcional Hito 1.1: Célula Proyectiva Geodésica (C++/MLX y Metal GPU)
+    # Validación funcional Hito 2.1: Célula de Memoria Geométrica (CPU y Metal GPU)
     D = 1024
-    h_in = mx.zeros((D,)) + (1.0 / (D ** 0.5))
-    v_drag = mx.zeros((D,))
-    a_flow = mx.zeros((D,))
-    u_att = mx.zeros((D,)) + (1.0 / (D ** 0.5))
+    mA = mx.zeros((D,)) + (1.0 / (D ** 0.5))
+    mB = mx.zeros((D,))
+    mB[0] = 1.0
+    pack_res = aether_native_c.hilbert_memory_pack_two(mA, mB)
+    mx.eval(pack_res["result"])
+    print("✓ hilbert_memory_pack_two (CPU): degenerate =", pack_res["degenerate"])
 
-    out_cell_cpp = aether_native_c.dispatch_geodesic_trajectory_cell(h_in, v_drag, a_flow, u_att)
-    mx.eval(out_cell_cpp["h_star"], out_cell_cpp["h_deflated"])
-    print("✓ dispatch_geodesic_trajectory_cell (C++/MLX): norm(h*) =", float(mx.sqrt(mx.sum(out_cell_cpp["h_star"]**2))))
-
-    out_cell_metal = aether_native_c.dispatch_geodesic_trajectory_cell_metal(h_in, v_drag, a_flow, u_att)
-    mx.eval(out_cell_metal["h_star"], out_cell_metal["h_deflated"])
-    print("✓ dispatch_geodesic_trajectory_cell_metal (Metal GPU): norm(h*) =", float(mx.sqrt(mx.sum(out_cell_metal["h_star"]**2))))
+    pack_metal = aether_native_c.hilbert_memory_pack_two_metal(mA, mB)
+    mx.eval(pack_metal["result"])
+    print("✓ hilbert_memory_pack_two_metal (Metal GPU): degenerate =", pack_metal["degenerate"])
 
     print("\n🚀 ¡Módulo aether_native_c (C++ y Metal GPU) compilado, enlazado y ejecutado al 100% con éxito!")
 else:

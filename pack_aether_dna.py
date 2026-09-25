@@ -39,10 +39,6 @@ CORE_FILES = [
     "include/safetensors_uma.h",
     "include/phase_branch.h",
     # Módulos del Paradigma Celular:
-    "include/geodesic_trajectory_cell.h",      # Célula 1 (Proyectiva / Radar / r)
-    "include/intracycle_state_buffer.h",       # Búfer UMA 3-Slot Zero-Copy
-    "include/permeability_gate.h",             # Compuerta Dual (Modo 0 vs 1)
-    "include/conformal_coupling_junction.h",   # Unión Conformal Inter-Modular
     "include/hilbert_memory_cell.h",           # Célula 2 (Memoria Markoviana 10 KB)
     "include/fact_band_router.h",              # Enrutador Cinemático de Cresta l*
 
@@ -51,7 +47,6 @@ CORE_FILES = [
     "metal/aether_c018_riemannian_engine.metal",
     "metal/aether_geodesic_engine.metal",
     "metal/c_field_qwen38_engine.metal",
-    "metal/geodesic_trajectory_cell.metal",    # Kernel de Reducción en 2 Fases (Célula 1)
     "metal/hilbert_memory_cell.metal",         # Kernel Álgebra Booleana de Hilbert (Célula 2)
     "metal/fact_band_router.metal",            # Kernel Enrutador de Fact Band en GPU
 
@@ -75,18 +70,13 @@ CORE_FILES = [
 
     # ── 7. BATERÍAS BASE Y CERTIFICACIÓN CINEMÁTICA ──
     "tests/test_advisor_battery.py",           # Batería base (27/27 tests de invariantes)
-    "tests/test_geodesic_trajectory_cell.py",  # Paridad Metal Célula 1 (5 Gates)
-    "tests/test_intracycle_buffer.py",         # Verificación de cinemática v_t, a_t
-    "tests/test_conformal_coupling.py",        # Batería geométrica de la unión conformal
     "tests/test_hilbert_memory_cell.py",       # Suite de memoria de Hilbert
-    "tests/test_intercell_coupling.py",        # Acoplamiento C1 -> C2
     "tests/test_fact_band_router.py",          # Aislamiento del router de cresta
     "tests/run_macbook_battery.py",
     "tests/infer_35b.py",
 
-    # ── 8. SUITE DE LABORATORIOS CAUSALES: PRIMERA ETAPA (LAB 09 - LAB 11) ──
+    # ── 8. SUITE DE LABORATORIOS CAUSALES: PRIMERA ETAPA ──
     "tests/lab09_trajectory_parity.py",        # LAB 09 (Persistencia vs Balística)
-    "tests/lab10_active_coupling_qwen.py",     # LAB 10 (Vanilla == Passive == Active-0)
     "tests/lab11_fact_band_routing.py",        # LAB 11 (Matriz causal de 8 controles y cresta L=21)
 
     # ── 9. SUITE DE LABORATORIOS CAUSALES: INTERVENCIÓN Y RESIDUAL (LAB 12 - LAB 16) ──

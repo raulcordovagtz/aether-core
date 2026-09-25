@@ -50,13 +50,9 @@ class AetherCoupledLayer:
                         slot_dict = aether_native_c.hilbert_memory_get_slot(dec["selected_slot"])
                         if slot_dict.get("valid", False):
                             u_fact = slot_dict["tensor"]
-                            t = self.state_ref.get("gen_step", 0)
-                            res = aether_native_c.dispatch_conformal_coupling(
-                                h_unit, u_fact, step=t, tau_eff=0.15, kappa_att=0.80,
-                                beta_gate=12.0, theta_gate=0.35, mode=1
-                            )
-                            h_steered = (res["h_steered"] * (norm_h - 1e-12)).astype(h.dtype)
-                            h = h_steered[None, None, :]
+                            theta_inj = 0.15 * float(dec.get("rectified_gate_g", 1.0))
+                            h_steered = aether_native_c.dispatch_riemannian_step(h_token, u_fact, theta_inj)
+                            h = h_steered[None, None, :].astype(h.dtype)
                             self.state_ref["last_fact_decision"] = dec
             except Exception:
                 pass

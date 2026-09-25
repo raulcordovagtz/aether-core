@@ -5,7 +5,6 @@
 #pragma once
 
 #include "hilbert_memory_cell.h"
-#include "conformal_coupling_junction.h"
 #include <vector>
 #include <cmath>
 #include <cstdint>
