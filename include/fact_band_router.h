@@ -1,6 +1,6 @@
 // ═════════════════════════════════════════════════════════════════════════════
-// 🌌 AETHER ENGINE :: FACT BAND ROUTER & CANDIDATE PEAK DETECTOR (HITO 2.2-R1)
-// Detección Cinemática de Cresta κ(l) y Enrutamiento Asociativo en Silicio UMA
+// 🌌 AETHER ENGINE :: FACT BAND ROUTER & CANDIDATE PEAK DETECTOR (C-023 SSOT)
+// Detección Cinemática de Cresta κ(l) en el Campo Tendiente (l >= 0.60 * N)
 // ═════════════════════════════════════════════════════════════════════════════
 #pragma once
 
@@ -14,27 +14,25 @@
 
 namespace aether {
 
-// Tratamientos experimentales de modulación en la Candidate Fact Band
 enum class InterventionTreatment : uint32_t {
-    ConcentratedPeak    = 0, // Tratamiento A: Intervención única en l* = argmax κ(l)
-    CurvatureWeighted   = 1  // Tratamiento B: Intervención distribuida ponderada por κ(l)
+    ConcentratedPeak    = 0,
+    CurvatureWeighted   = 1
 };
 
-// Causas de degeneración cinemática en el cálculo de curvatura
 enum class KinematicDegeneracy : uint32_t {
     NONE                  = 0,
-    ZERO_VELOCITY         = 1, // ||v|| ≈ 0: Flujo colapsado o idéntico entre capas
-    NUMERIC_CLAMP_APPLIED = 2  // Redondeo negativo en ||v||^2 ||a||^2 - (v·a)^2 fijado a 0
+    ZERO_VELOCITY         = 1,
+    NUMERIC_CLAMP_APPLIED = 2
 };
 
 struct alignas(16) RouterDecision {
-    uint32_t selected_slot;        // k* = argmax <h, m_k>
-    float    max_resonance_r;      // r_max
-    float    second_resonance_r;   // r_second (segundo mejor)
-    float    resonance_margin;     // margin = r_max - r_second
-    float    rectified_gate_g;     // g(r_max) ∈ [0, 1] con cero absoluto estricto
-    float    layer_curvature_kappa;// κ(l) de la capa evaluada
-    bool     is_active_injection;  // g > 0.0f
+    uint32_t selected_slot;
+    float    max_resonance_r;
+    float    second_resonance_r;
+    float    resonance_margin;
+    float    rectified_gate_g;
+    float    layer_curvature_kappa;
+    bool     is_active_injection;
 };
 
 class FactBandRouter {
@@ -52,19 +50,14 @@ public:
         memory_read_only_(true)
     {}
 
-    // ─── 1. COMPUERTA RECTIFICADA ESTRICTA (CERO FUGA) ───────────────────────
-    // g(r) = 0 si r < theta;  g(r) = sigma(beta * (r - theta)) si r >= theta
     float compute_rectified_gate(float r_max) const {
         if (r_max < theta_assoc_) {
-            return 0.0f; // Cero absoluto en silicio
+            return 0.0f;
         }
         return 1.0f / (1.0f + std::exp(-beta_ * (r_max - theta_assoc_)));
     }
 
-    // ─── 2. DETECTOR DE CRESTA CINEMÁTICA κ(l) (MODO A: AGNÓSTICO PURO) ──────
-    // Analiza la secuencia de estados residuales de prefill a lo largo de las N capas.
-    // Retorna l* = argmax κ(l) y la tabla completa de curvaturas.
-    // Protegido contra ||v|| ≈ 0 y clamp numérico del radicando de bivector.
+    // ─── DETECTOR DE CRESTA CINEMÁTICA EN CAMPO TENDIENTE (l >= 0.60 * N) ───
     static uint32_t detect_candidate_band_peak(
         const std::vector<const float*>& layer_states,
         uint32_t num_layers,
@@ -79,7 +72,10 @@ public:
         if (num_layers < 4) return num_layers / 2;
 
         float max_kappa = -1.0f;
-        uint32_t peak_l = num_layers / 2;
+        uint32_t peak_l = static_cast<uint32_t>(num_layers * 0.79f);
+
+        // Límite analítico: la Fact Band reside en el cono profundo post-sintaxis
+        uint32_t l_start_tendiente = static_cast<uint32_t>(num_layers * 0.60f);
 
         std::vector<float> v_curr(D, 0.0f);
         std::vector<float> v_prev(D, 0.0f);
@@ -92,7 +88,6 @@ public:
             }
 
             if (l >= 2) {
-                // Si la velocidad es virtualmente nula, flujo estacionario => kappa = 0
                 if (sq_v < 1e-8f) {
                     out_kappas[l] = 0.0f;
                     if (out_degeneracies) {
@@ -110,8 +105,6 @@ public:
                     dot_va += v_curr[i] * a;
                 }
 
-                // Radicando del bivector de Lagrange: ||v||^2 ||a||^2 - (v·a)^2 >= 0
-                // Clamp explícito contra errores de cancelación numérica en float32
                 float bivector_sq = (sq_v * sq_a) - (dot_va * dot_va);
                 KinematicDegeneracy degen = KinematicDegeneracy::NONE;
                 if (bivector_sq < 0.0f) {
@@ -125,7 +118,8 @@ public:
                     (*out_degeneracies)[l] = degen;
                 }
 
-                if (kappa > max_kappa) {
+                // La cresta máxima solo se busca dentro del campo tendiente de decisión
+                if (l >= l_start_tendiente && kappa > max_kappa) {
                     max_kappa = kappa;
                     peak_l = l;
                 }
@@ -135,7 +129,6 @@ public:
         return peak_l;
     }
 
-    // ─── 3. ENRUTADOR ASOCIATIVO EN HOT-PATH (CERO ARCCOS, CON MARGEN) ────────
     RouterDecision evaluate_layer_routing(
         const float* h_layer,
         const HilbertMemoryCell& memory_cell
