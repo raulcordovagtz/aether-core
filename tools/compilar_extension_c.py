@@ -8,7 +8,8 @@ print("═" * 78)
 metal_shaders = [
     ("metal/hilbert_memory_cell.metal", "metal/hilbert_memory_cell.metallib", "metal/hilbert_memory_cell.air"),
     ("metal/fact_band_router.metal", "metal/fact_band_router.metallib", "metal/fact_band_router.air"),
-    ("metal/tetrapolar_predictor_cell.metal", "metal/tetrapolar_predictor_cell.metallib", "metal/tetrapolar_predictor_cell.air")
+    ("metal/tetrapolar_predictor_cell.metal", "metal/tetrapolar_predictor_cell.metallib", "metal/tetrapolar_predictor_cell.air"),
+    ("metal/tetrapolar_extractor.metal", "metal/tetrapolar_extractor.metallib", "metal/tetrapolar_extractor.air")
 ]
 
 for src, out, air in metal_shaders:
@@ -143,6 +144,13 @@ if res.returncode == 0:
     pred_metal = aether_native_c.tetrapolar_predictor_step_metal(h_in, v_tan, u_o, u_t, u_a, u_e, 0.5)
     mx.eval(pred_metal["h_star"])
     print("✓ tetrapolar_predictor_step_metal (Metal GPU): grad_teleo =", pred_metal["telemetry"]["grad_teleo"])
+
+    # Validación funcional Extractor de Tetrapolos (Metal GPU)
+    X_test = mx.zeros((8, D)) + 0.1
+    w_eos_test = mx.zeros((D,)); w_eos_test[0] = 1.0
+    poles_test = aether_native_c.extract_tetrapolar_poles_metal(X_test, w_eos_test, 4)
+    mx.eval(poles_test["u_onto"], poles_test["u_teleo"])
+    print("✓ extract_tetrapolar_poles_metal (Metal GPU): norm(u_onto) =", float(mx.sqrt(mx.sum(poles_test["u_onto"]**2))))
 
     print("\n🚀 ¡Módulo aether_native_c (C++ y Metal GPU) compilado, enlazado y ejecutado al 100% con éxito!")
 else:

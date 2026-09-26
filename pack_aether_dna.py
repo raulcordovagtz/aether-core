@@ -53,6 +53,7 @@ CORE_FILES = [
     "metal/hilbert_memory_cell.metal",
     "metal/fact_band_router.metal",
     "metal/tetrapolar_predictor_cell.metal",
+    "metal/tetrapolar_extractor.metal",
 
     # ── 5. RUNTIME NATIVO Y DE INFERENCIA (aether_vlm/) ──
     "aether_vlm/__init__.py",
@@ -81,6 +82,7 @@ CORE_FILES = [
     "tests/test_hilbert_memory_cell.py",
     "tests/test_fact_band_router.py",
     "tests/test_tetrapolar_predictor.py",
+    "tests/test_tetrapolar_extractor.py",
     "tests/test_tetrapolar_real_inference.py",
     "tests/test_universal_constraint_algebra.py",
     "tests/test_analyst_challenge.py",

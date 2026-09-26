@@ -628,6 +628,93 @@ nb::dict tetrapolar_predictor_step_metal(
     }
 }
 
+// ─── 9. EXTRACTOR NATIVO DE TETRAPOLO DEL MOTOR (METAL GPU) ──────────────────
+static id<MTLComputePipelineState> g_metal_pso_extractor = nil;
+
+static void init_metal_tetrapolar_extractor() {
+    if (g_metal_pso_extractor != nil) return;
+    @autoreleasepool {
+        if (!g_metal_device) g_metal_device = MTLCreateSystemDefaultDevice();
+        if (!g_metal_queue)  g_metal_queue = [g_metal_device newCommandQueue];
+
+        NSError* err = nil;
+        NSString* path = @"metal/tetrapolar_extractor.metallib";
+        if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            path = @"/Users/crotalo/aether_engine/metal/tetrapolar_extractor.metallib";
+        }
+        NSURL* libURL = [NSURL fileURLWithPath:path];
+        id<MTLLibrary> lib = [g_metal_device newLibraryWithURL:libURL error:&err];
+        if (!lib) {
+            throw std::runtime_error("No se pudo cargar tetrapolar_extractor.metallib: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+        id<MTLFunction> fn = [lib newFunctionWithName:@"dispatch_extract_tetrapolar_poles"];
+        if (!fn) {
+            throw std::runtime_error("Función dispatch_extract_tetrapolar_poles no encontrada en metallib");
+        }
+        g_metal_pso_extractor = [g_metal_device newComputePipelineStateWithFunction:fn error:&err];
+        if (!g_metal_pso_extractor) {
+            throw std::runtime_error("Error creando pipeline state Metal para extractor: " +
+                                     std::string(err ? [[err localizedDescription] UTF8String] : "unknown"));
+        }
+    }
+}
+
+nb::dict extract_tetrapolar_poles_metal(
+    const array& X_seq,
+    const array& W_eos,
+    uint32_t T_split
+) {
+    eval({X_seq, W_eos});
+    init_metal_tetrapolar_extractor();
+
+    uint32_t T = static_cast<uint32_t>(X_seq.shape(0));
+    uint32_t D = static_cast<uint32_t>(X_seq.shape(1));
+    size_t bytes_vec = D * sizeof(float);
+    size_t bytes_seq = T * D * sizeof(float);
+
+    @autoreleasepool {
+        id<MTLBuffer> buf_seq   = [g_metal_device newBufferWithBytes:X_seq.data<float>() length:bytes_seq options:MTLResourceStorageModeShared];
+        id<MTLBuffer> buf_eos   = [g_metal_device newBufferWithBytes:W_eos.data<float>() length:bytes_vec options:MTLResourceStorageModeShared];
+        id<MTLBuffer> buf_onto  = [g_metal_device newBufferWithLength:bytes_vec options:MTLResourceStorageModeShared];
+        id<MTLBuffer> buf_teleo = [g_metal_device newBufferWithLength:bytes_vec options:MTLResourceStorageModeShared];
+        id<MTLBuffer> buf_anti  = [g_metal_device newBufferWithLength:bytes_vec options:MTLResourceStorageModeShared];
+        id<MTLBuffer> buf_peos  = [g_metal_device newBufferWithLength:bytes_vec options:MTLResourceStorageModeShared];
+
+        id<MTLCommandBuffer> cmd = [g_metal_queue commandBufferWithUnretainedReferences];
+        id<MTLComputeCommandEncoder> enc = [cmd computeCommandEncoder];
+        [enc setComputePipelineState:g_metal_pso_extractor];
+        [enc setBuffer:buf_seq   offset:0 atIndex:0];
+        [enc setBuffer:buf_eos   offset:0 atIndex:1];
+        [enc setBuffer:buf_onto  offset:0 atIndex:2];
+        [enc setBuffer:buf_teleo offset:0 atIndex:3];
+        [enc setBuffer:buf_anti  offset:0 atIndex:4];
+        [enc setBuffer:buf_peos  offset:0 atIndex:5];
+        [enc setBytes:&T length:sizeof(uint32_t) atIndex:6];
+        [enc setBytes:&D length:sizeof(uint32_t) atIndex:7];
+        [enc setBytes:&T_split length:sizeof(uint32_t) atIndex:8];
+
+        NSUInteger tg_size = std::min(static_cast<uint32_t>(256), D);
+        [enc setThreadgroupMemoryLength:tg_size * 3 * sizeof(float) atIndex:0];
+        [enc dispatchThreadgroups:MTLSizeMake(1, 1, 1) threadsPerThreadgroup:MTLSizeMake(tg_size, 1, 1)];
+        [enc endEncoding];
+        [cmd commit];
+        [cmd waitUntilCompleted];
+
+        array u_onto((float*)[buf_onto contents], {static_cast<int>(D)}, float32);
+        array u_teleo((float*)[buf_teleo contents], {static_cast<int>(D)}, float32);
+        array u_anti((float*)[buf_anti contents], {static_cast<int>(D)}, float32);
+        array u_eos_out((float*)[buf_peos contents], {static_cast<int>(D)}, float32);
+
+        nb::dict d;
+        d["u_onto"]  = u_onto;
+        d["u_teleo"] = u_teleo;
+        d["u_anti"]  = u_anti;
+        d["u_eos"]   = u_eos_out;
+        return d;
+    }
+}
+
 // ─── ENLACE DEL MÓDULO NANOBIND ──────────────────────────────────────────────
 NB_MODULE(aether_native_c, m) {
     m.def("dispatch_riemannian_step", &riemannian_step_cpp, "Exp-Map Riemanniano en C++ nativo",
@@ -694,6 +781,11 @@ NB_MODULE(aether_native_c, m) {
           nb::arg("h_in"), nb::arg("v_tangent"),
           nb::arg("u_onto"), nb::arg("u_teleo"), nb::arg("u_anti"), nb::arg("u_eos"),
           nb::arg("tau") = 0.0f);
+
+    // Extractor Nativo de Tetrapolos (Metal GPU)
+    m.def("extract_tetrapolar_poles_metal", &extract_tetrapolar_poles_metal,
+          "Extrae los 4 polos del Tetrapolo directamente en Metal GPU",
+          nb::arg("X_seq"), nb::arg("W_eos"), nb::arg("T_split"));
 }
 
 
