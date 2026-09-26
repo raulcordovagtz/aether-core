@@ -132,27 +132,26 @@ def test_tetrapolar_predictor():
         g_anti  = tel["grad_anti"]
         g_eos   = tel["grad_eos"]
 
-        assert -1.0001 <= g_onto <= 1.0001
-        assert -1.0001 <= g_teleo <= 1.0001
-        assert -1.0001 <= g_anti <= 1.0001
-        assert -1.0001 <= g_eos <= 1.0001
+        assert 0.0 <= g_onto <= 1.0001
+        assert 0.0 <= g_teleo <= 1.0001
+        assert 0.0 <= g_anti <= 1.0001
+        assert 0.0 <= g_eos <= 1.0001
 
-        # u_teleo estaba alineado con v -> grad_teleo debe ser claramente positivo
-        # u_anti estaba opuesto a v -> grad_anti debe ser claramente negativo
+        # Al estar v opuesto a u_anti, la proyección negativa debe quedar rectificada a 0.0
         assert g_teleo > 0.50, f"grad_teleo debió ser fuertemente positivo: {g_teleo}"
-        assert g_anti < -0.50, f"grad_anti debió ser fuertemente negativo: {g_anti}"
+        assert g_anti == 0.0, f"grad_anti debió rectificarse a 0.0: {g_anti}"
 
         # Paridad de telemetría CPU vs Metal
         assert abs(tel["grad_teleo"] - tel_metal["grad_teleo"]) < 1e-5
         assert abs(tel["grad_anti"] - tel_metal["grad_anti"]) < 1e-5
         assert abs(tel["omega_angular_velocity"] - tel_metal["omega_angular_velocity"]) < 1e-5
 
-        print(f"  [✅ PASS] Líneas Derivativas del Tetrapolo:")
-        print(f"      • grad_teleo (Hacia la meta)  : {g_teleo:+.4f} > +0.50")
-        print(f"      • grad_anti  (Hacia el error) : {g_anti:+.4f} < -0.50")
-        print(f"      • grad_onto  (Anclaje base)   : {g_onto:+.4f}")
-        print(f"      • grad_eos   (Cierre final)   : {g_eos:+.4f}")
-        print(f"      • teleology_alignment (<h*, u>): {tel['teleology_alignment']:+.4f}")
+        print(f"  [✅ PASS] Líneas Derivativas Confinadas a R+:")
+        print(f"      • grad_teleo (Hacia la meta)  : {g_teleo:+.4f} (Positivo > 0.50)")
+        print(f"      • grad_anti  (Alejándose)     : {g_anti:+.4f} (Rectificado a 0.0)")
+        print(f"      • grad_onto  (Anclaje base)   : {g_onto:+.4f} >= 0.0")
+        print(f"      • grad_eos   (Cierre final)   : {g_eos:+.4f} >= 0.0")
+        print(f"      • teleology_alignment (<h*, u>): {tel['teleology_alignment']:+.4f} >= 0.0")
         print(f"      • Paridad de derivadas CPU ↔ Metal < 1e-5 ✓")
 
     section("RESULTADO: PREDICTOR GEODÉSICO TETRAPOLAR 100% CERTIFICADO")

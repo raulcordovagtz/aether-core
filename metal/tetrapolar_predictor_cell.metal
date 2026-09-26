@@ -115,10 +115,10 @@ kernel void dispatch_tetrapolar_predictor_step(
     if (tid == 0) {
         telemetry_out->omega_angular_velocity = omega;
         telemetry_out->curvature_kappa        = (norm_v_perp > 1e-6f) ? (omega / norm_h) : 0.0f;
-        telemetry_out->grad_onto              = sh_acc[0];
-        telemetry_out->grad_teleo             = sh_acc[1];
-        telemetry_out->grad_anti              = sh_acc[2];
-        telemetry_out->grad_eos               = sh_acc[3];
-        telemetry_out->teleology_alignment    = sh_acc[4];
+        telemetry_out->grad_onto              = max(0.0f, sh_acc[0]);
+        telemetry_out->grad_teleo             = max(0.0f, sh_acc[1]);
+        telemetry_out->grad_anti              = max(0.0f, sh_acc[2]);
+        telemetry_out->grad_eos               = max(0.0f, sh_acc[3]);
+        telemetry_out->teleology_alignment    = max(0.0f, sh_acc[4]);
     }
 }

@@ -124,7 +124,7 @@ def run_tetrapolar_inference_eval(model_key="27b"):
 
     taus_to_test = [0.0, 0.5, 1.0]
 
-    print(f"  {'Capa L':<10} │ {'Horizonte tau':<14} │ {'Token Predicho':<18} │ {'Coincide?':<10} │ {'Curvatura kappa':<16} │ {'grad_teleo'}")
+    print(f"  {'Capa L':<8} │ {'tau':<6} │ {'Token Predicho':<16} │ {'Coincide?':<10} │ {'Logit N+':<12} │ {'grad_teleo':<12} │ grad_anti")
     print("  " + "─" * 86)
 
     for l_eval in test_layers:
@@ -145,12 +145,21 @@ def run_tetrapolar_inference_eval(model_key="27b"):
             logits_pred = lm_head_fn(h_normed)[0, 0, :].astype(mx.float32)
             mx.eval(logits_pred)
 
-            pred_id = int(mx.argmax(logits_pred))
-            pred_str = repr(tok.decode([pred_id]))
-            match = (pred_id == token_real_id)
-            match_str = "✅ SÍ" if match else "❌ NO"
+            # Proyección formal al cono discreto natural N+
+            min_logit = mx.min(logits_pred)
+            logits_pos = mx.maximum(0.0, logits_pred - min_logit)
+            logits_n_plus = mx.floor(logits_pos) # Enteros naturales >= 0
+            mx.eval(logits_n_plus)
 
-            print(f"  L = {l_eval:<6} │ tau = {tau:<8.1f} │ {pred_str:<18} │ {match_str:<10} │ {tel['curvature_kappa']:<16.4f} │ {tel['grad_teleo']:+.4f}")
+            pred_id = int(mx.argmax(logits_n_plus))
+            pred_str = repr(tok.decode([pred_id]))
+            match_str = "✅ SÍ" if pred_id == token_real_id else "❌ NO"
+
+            top_natural_val = int(logits_n_plus[pred_id])
+            gt = tel["grad_teleo"]
+            ga = tel["grad_anti"]
+
+            print(f"  L = {l_eval:<4} │ {tau:<6.1f} │ {pred_str:<16} │ {match_str:<10} │ {top_natural_val:<12d} │ {gt:+12.4f} │ {ga:+.4f}")
 
     section("DICTAMEN: EVALUACIÓN MULTIMODELO CONCLUIDA")
 

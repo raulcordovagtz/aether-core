@@ -107,11 +107,12 @@ public:
             if (poles.u_teleo) dot_teleo_proj += star_val * poles.u_teleo[i];
         }
 
-        telemetry.grad_onto  = g_onto;
-        telemetry.grad_teleo = g_teleo;
-        telemetry.grad_anti  = g_anti;
-        telemetry.grad_eos   = g_eos;
-        telemetry.teleology_alignment = dot_teleo_proj;
+        // Blindaje a dominio no negativo R+
+        telemetry.grad_onto  = std::max(0.0f, g_onto);
+        telemetry.grad_teleo = std::max(0.0f, g_teleo);
+        telemetry.grad_anti  = std::max(0.0f, g_anti);
+        telemetry.grad_eos   = std::max(0.0f, g_eos);
+        telemetry.teleology_alignment = std::max(0.0f, dot_teleo_proj);
     }
 
     uint32_t dimension() const { return D_; }
